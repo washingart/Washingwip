@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AM-4 Washing WIP Report</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --ink:#1a2233;
+    --ink-soft:#5c6b81;
+    --line:#e7eaf1;
+    --bg:#f3f5f9;
+    --card:#ffffff;
+    --blue:#3762e0;
+    --blue-dark:#2a4bc4;
+    --blue-soft:#eaf0fd;
+    --green:#12996b;
+    --green-soft:#e5f6ee;
+    --red:#dc4b3f;
+    --red-soft:#fbeae8;
+    --amber:#b8860f;
+    --amber-soft:#f8f0dc;
+    --mono:'IBM Plex Mono',monospace;
+    --sans:'IBM Plex Sans',sans-serif;
+    --radius:12px;
+    --ease:cubic-bezier(0.25,0.1,0.25,1);
+    --shadow-sm:0 1px 3px rgba(26,34,51,0.05), 0 1px 2px rgba(26,34,51,0.04);
+    --shadow-md:0 8px 20px rgba(26,34,51,0.09);
+    --shadow-lift:0 14px 32px rgba(26,34,51,0.16);
+  }
+  *{box-sizing:border-box;}
+  ::selection{background:var(--blue-soft);}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:100%;margin:0;padding:20px 26px 60px;}
+
+  /* Header */
+  header.top{
+    display:flex;align-items:center;gap:20px;
+    padding:16px 22px;margin-bottom:20px;
+    background:linear-gradient(100deg, #182451 0%, var(--blue) 100%);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-md);
+  }
+  .logo-badge{
+    flex:0 0 auto;background:#fff;border-radius:10px;
+    padding:8px 12px;box-shadow:var(--shadow-sm);
+  }
+  .logo-badge img{display:block;height:48px;width:auto;}
+  .titleblock h1{margin:0;font-size:21px;letter-spacing:0.3px;color:#fff;font-weight:800;}
+  .titleblock .addr{font-family:var(--mono);font-size:11.5px;color:rgba(255,255,255,0.78);margin-top:4px;}
+  .titleblock .sub{
+    font-family:var(--mono);font-size:11.5px;color:#fff;margin-top:7px;font-weight:700;
+    letter-spacing:1.2px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,0.18);padding:4px 11px;border-radius:20px;
+  }
+  .titleblock .sub::before{
+    content:'';width:6px;height:6px;border-radius:50%;background:#5ee6a8;
+    box-shadow:0 0 0 4px rgba(94,230,168,0.3);
+  }
+
+  nav.tabs{
+    display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:6px;box-shadow:var(--shadow-sm);border:1px solid var(--line);
+  }
+  nav.tabs button{
+    font-family:var(--sans);font-weight:700;font-size:14px;
+    background:transparent;color:var(--ink-soft);
+    border:none;border-radius:8px;padding:11px 16px;cursor:pointer;flex:1 1 auto;
+    transition:background 0.22s var(--ease), color 0.22s var(--ease);
+  }
+  nav.tabs button.active{background:var(--blue);color:#fff;box-shadow:0 3px 10px rgba(55,98,224,0.28);}
+  nav.tabs button:hover:not(.active){background:var(--blue-soft);color:var(--blue-dark);}
+
+  section.panel{display:none;}
+  section.panel.active{display:block;animation:fadeIn 0.28s var(--ease);}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
+    padding:20px 22px;margin-bottom:18px;
+    transition:box-shadow 0.25s var(--ease), transform 0.25s var(--ease);
+  }
+  .card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  .card h2{
+    font-size:14.5px;text-transform:uppercase;letter-spacing:0.6px;font-weight:800;
+    margin:0 0 16px;padding-bottom:12px;border-bottom:2px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    color:var(--ink);
+  }
+  .card h2::before{
+    content:'';display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:9px;
+    background:var(--blue);
+  }
+  .card h2 .hint{font-family:var(--mono);font-size:11px;text-transform:none;letter-spacing:0;color:var(--ink-soft);font-weight:400;}
+
+  /* form */
+  .grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;}
+  label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink-soft);margin-bottom:5px;}
+  input,select{
+    width:100%;padding:10px 11px;border:1.5px solid var(--line);background:#fbfcfe;border-radius:8px;
+    font-family:var(--mono);font-size:14px;color:var(--ink);
+    transition:border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+  }
+  input:hover,select:hover{border-color:#b9c8ef;}
+  input:focus,select:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px var(--blue-soft);}
+  .field{margin-bottom:2px;}
+  .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  button.btn{
+    font-family:var(--sans);font-weight:700;font-size:14px;letter-spacing:0.2px;
+    padding:11px 20px;border:none;border-radius:9px;color:#fff;
+    background:var(--blue);
+    cursor:pointer;box-shadow:0 2px 8px rgba(55,98,224,0.25);
+    transition:transform 0.16s var(--ease), box-shadow 0.22s var(--ease), background 0.2s var(--ease);
+  }
+  button.btn.secondary{background:#fff;color:var(--ink);border:1.5px solid var(--line);box-shadow:none;}
+  button.btn.danger{background:var(--red);box-shadow:0 2px 8px rgba(220,75,63,0.25);}
+  button.btn:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);background:var(--blue-dark);}
+  button.btn.secondary:hover{background:var(--blue-soft);border-color:#b9c8ef;color:var(--blue-dark);}
+  button.btn.danger:hover{background:#c23c31;}
+  button.btn:active{transform:translateY(0);transition-duration:0.05s;}
+  button.btn:focus-visible, select:focus-visible, input:focus-visible{outline:3px solid var(--blue-soft);outline-offset:1px;}
+
+  table{width:100%;border-collapse:separate;border-spacing:0;font-family:var(--mono);font-size:14px;table-layout:fixed;}
+  th,td{padding:10px 11px;text-align:right;white-space:normal;word-break:break-word;overflow-wrap:anywhere;border-bottom:1px solid var(--line);}
+  th{
+    background:#eef2fa;color:var(--ink);text-align:right;font-weight:700;position:sticky;top:0;
+    font-size:12px;text-transform:uppercase;letter-spacing:0.3px;border-bottom:2px solid var(--line);
+  }
+  th:first-child{border-top-left-radius:9px;}
+  th:last-child{border-top-right-radius:9px;}
+  td.name, th.name{text-align:left;font-family:var(--sans);font-weight:600;}
+  tbody tr{transition:background 0.15s var(--ease);}
+  tbody tr:nth-child(even){background:#f8f9fc;}
+  tbody tr:hover{background:var(--blue-soft);}
+  tr.total td{background:var(--ink);color:#fff;font-weight:700;}
+  tr.group-header td{background:var(--blue-soft);color:var(--blue-dark);font-weight:800;font-family:var(--sans);text-transform:uppercase;letter-spacing:0.4px;font-size:12px;}
+  tr.subtotal td{background:#eef2fa;font-weight:700;border-top:2px solid var(--line);}
+  tr.total:hover{background:var(--ink);}
+  .tablewrap{overflow-x:visible;max-height:520px;overflow-y:auto;border-radius:10px;border:1px solid var(--line);}
+  table th:first-child, table td:first-child{width:18%;}
+  .neg{color:var(--red);font-weight:700;}
+  .pos{color:var(--green);font-weight:700;}
+  .zero{color:var(--ink-soft);}
+
+  .rowbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .filterline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .filterline select{width:auto;min-width:180px;}
+  .pill{
+    font-family:var(--mono);font-size:12px;padding:4px 11px;border-radius:20px;border:1px solid var(--line);
+    background:#fff;color:var(--ink-soft);
+  }
+  .del-btn{
+    background:none;border:none;color:var(--red);cursor:pointer;font-family:var(--sans);font-weight:700;
+    font-size:17px;line-height:1;padding:4px 8px;border-radius:7px;transition:background 0.18s var(--ease), transform 0.16s var(--ease);
+  }
+  .del-btn:hover{background:var(--red-soft);transform:scale(1.1);}
+  .empty-note{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);padding:22px 14px;text-align:center;}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:18px;}
+  .kpi{
+    background:var(--card);border:1px solid var(--line);border-radius:11px;padding:14px 16px;
+    box-shadow:var(--shadow-sm);border-left:4px solid var(--blue);
+    transition:transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+  .kpi .label{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);font-weight:700;}
+  .kpi .val{font-family:var(--mono);font-size:24px;font-weight:800;margin-top:5px;}
+
+  .lookup-result{margin-top:18px;}
+  .lookup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;}
+  .lookup-grid .box{
+    border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--card);
+    border-left:4px solid var(--blue);box-shadow:var(--shadow-sm);
+    transition:transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .lookup-grid .box:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+  .lookup-grid .box .l{font-size:11px;text-transform:uppercase;color:var(--ink-soft);font-weight:700;letter-spacing:0.3px;}
+  .lookup-grid .box .v{font-family:var(--mono);font-size:20px;font-weight:800;margin-top:4px;}
+
+  footer.note{font-family:var(--mono);font-size:12px;color:var(--ink-soft);text-align:center;margin-top:34px;padding-top:16px;border-top:1px solid var(--line);}
+  footer.note .credit{display:inline-block;margin-top:6px;font-weight:700;color:var(--blue);letter-spacing:0.3px;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;
+    padding:13px 22px;border-radius:10px;box-shadow:var(--shadow-lift);
+    z-index:999;max-width:90vw;text-align:center;
+    animation:toastIn 0.25s var(--ease);
+  }
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+  button.btn.confirming{background:var(--red);}
+  button.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+
+  @media (max-width:640px){
+    .wrap{padding:12px 10px 40px;}
+    header.top{flex-wrap:nowrap;padding:12px;gap:12px;}
+    .titleblock{min-width:0;overflow:hidden;}
+    .titleblock h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .titleblock .addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .logo-badge{padding:6px 8px;}
+    .logo-badge img{height:34px;}
+    .titleblock h1{font-size:15px;}
+    .titleblock .addr{font-size:9.5px;}
+    .titleblock .sub{font-size:9.5px;padding:3px 8px;margin-top:5px;}
+    nav.tabs{
+      flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+      justify-content:flex-start;scrollbar-width:none;
+    }
+    nav.tabs::-webkit-scrollbar{display:none;}
+    nav.tabs button{flex:0 0 auto;padding:9px 14px;font-size:12.5px;white-space:nowrap;}
+    .card{padding:14px 14px;margin-bottom:14px;}
+    .card h2{font-size:12.5px;}
+    .card h2 .hint{display:block;margin-top:4px;font-size:10px;}
+    .grid-form{grid-template-columns:1fr 1fr;gap:9px;}
+    label{font-size:10px;}
+    input,select{padding:9px 9px;font-size:13px;}
+    .actions{gap:8px;}
+    button.btn{padding:10px 14px;font-size:12.5px;flex:1 1 auto;text-align:center;}
+    th,td{font-size:11.5px;padding:7px 8px;}
+    table{table-layout:auto;}
+    .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    th,td{white-space:nowrap;}
+    .kpi-row{grid-template-columns:1fr 1fr;gap:9px;}
+    .kpi{padding:11px 12px;}
+    .kpi .val{font-size:19px;}
+    .lookup-grid{grid-template-columns:1fr 1fr;gap:9px;}
+    .lookup-grid .box .v{font-size:16px;}
+    .rowbar, .filterline{gap:8px;}
+    .filterline select{min-width:0;flex:1 1 auto;}
+    svg#flow-svg{min-width:640px;}
+    .toast{font-size:12.5px;padding:11px 16px;bottom:14px;}
+  }
+
+  @media (max-width:400px){
+    .grid-form{grid-template-columns:1fr;}
+    .kpi-row{grid-template-columns:1fr;}
+    .lookup-grid{grid-template-columns:1fr 1fr;}
+    .titleblock h1{font-size:13.5px;}
+    button.btn{font-size:12px;padding:9px 12px;}
+  }
+
+  /* ---------- Welcome screen ---------- */
+  #welcome-screen{
+    position:fixed; inset:0; z-index:2000;
+    background:
+      radial-gradient(circle at 10% 15%, rgba(47,111,237,0.14), transparent 45%),
+      radial-gradient(circle at 90% 85%, rgba(18,153,107,0.12), transparent 45%),
+      var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    padding:28px; overflow-y:auto;
+  }
+  #welcome-screen.hidden{ display:none; }
+  .welcome-inner{
+    display:flex; gap:26px; max-width:1080px; width:100%; align-items:stretch; flex-wrap:wrap;
+  }
+  .welcome-main{
+    flex:1 1 560px; background:var(--card); border:1px solid var(--line); border-radius:18px;
+    box-shadow:var(--shadow-md); padding:36px 40px; text-align:center;
+  }
+  .welcome-logo-badge{ display:inline-block; background:#fff; border-radius:10px; padding:8px 12px; box-shadow:var(--shadow-sm); margin-bottom:18px; }
+  .welcome-logo-badge img{ height:44px; display:block; }
+  .welcome-hero{ width:100%; max-width:420px; height:auto; margin:6px auto 18px; display:block; }
+  .welcome-main h1{ margin:0 0 6px; font-size:26px; font-weight:800; color:var(--ink); }
+  .welcome-main .welcome-tag{
+    font-family:var(--mono); font-size:12px; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--blue); font-weight:700; margin-bottom:18px;
+  }
+  .welcome-about{
+    text-align:left; background:var(--bg); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; margin:0 0 24px; color:var(--ink-soft); font-size:14px; line-height:1.7;
+  }
+  .welcome-about b{ color:var(--ink); }
+  #btn-enter-app{ font-size:15px; padding:13px 30px; }
+
+  .welcome-side{
+    flex:0 1 280px; display:flex; flex-direction:column; gap:18px;
+  }
+  .side-widget{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow-sm); padding:20px;
+  }
+  .clock-widget{ text-align:center; }
+  .clock-time{ font-family:var(--mono); font-size:34px; font-weight:800; color:var(--ink); letter-spacing:1px; }
+  .clock-date{ font-family:var(--mono); font-size:12.5px; color:var(--ink-soft); margin-top:6px; }
+  .cal-title{ text-align:center; font-weight:800; font-size:13.5px; letter-spacing:0.4px; color:var(--ink); margin-bottom:12px; }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+  .cal-grid .cal-dow{ font-family:var(--mono); font-size:10px; color:var(--ink-soft); font-weight:700; padding-bottom:4px; }
+  .cal-grid .cal-day{ font-family:var(--mono); font-size:12px; color:var(--ink); padding:6px 0; border-radius:6px; }
+  .cal-grid .cal-day.cal-empty{ visibility:hidden; }
+  .cal-grid .cal-day.cal-today{ background:var(--blue); color:#fff; font-weight:800; }
+
+  @media (max-width:760px){
+    #welcome-screen{ padding:16px; align-items:flex-start; }
+    .welcome-main{ padding:24px 20px; }
+    .welcome-hero{ max-width:260px; }
+    .welcome-main h1{ font-size:21px; }
+    .welcome-side{ flex:1 1 100%; flex-direction:row; }
+    .side-widget{ flex:1 1 0; padding:14px; }
+    .clock-time{ font-size:24px; }
+    .clock-date{ font-size:10.5px; }
+    .cal-title{ font-size:12px; }
+    .cal-grid .cal-day{ font-size:10.5px; padding:4px 0; }
+  }
+
+  @media (max-width:480px){
+    .welcome-side{ flex-direction:column; }
+    .welcome-about{ font-size:13px; padding:13px 14px; }
+    #btn-enter-app{ width:100%; }
+  }
+</style>
+</head>
+<body>
+<div id="welcome-screen">
+  <div class="welcome-inner">
+    <div class="welcome-main">
+      <div class="welcome-logo-badge"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANwAAABUCAMAAADeZ6kGAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMAUExURf///wAAAPf393Nzc4R7hFpjYwAICHtze4SMhObm71JSUmtjY1paUikhKRAICObm3r29vRAZGZyUnKWlrcW9xZSUjN7e1joxOjExMbW1tSEhGUJCSkJCOpylnM7Fxc7O1lpSvRBSvVoZvRAZvTqEWjqE3ms6czrOGTrOnDqEGTqEnBDOWhDO3hCEWhCE3msQcxDOGRDOnBCEGRCEnOYZ7+YZra0Z760ZreYZzuYZjK0Zzq0ZjHvmWnsZQnvmGXu1WnsZEHu1GXu93nu9nFrmWloZQlrmGVq1WloZEFq1GVq93lq9nEJSEKXF5ubvvebvlFpS7zpSc+97nBBS71oZ7xAZ7zoZcxBSc8V7nBAZc+Z7zq17zuZK73uM5uZKra1K761KrXNSKWOMjHuMtXtSvTFSvXsZvTEZveZra+YQa+ZrKeYQKa1ra60Qa61rKa0QKeZKzlqM5uZKjK1Kzq1KjHNSCFqMteZrSuYQSuZrCOYQCK1rSq0QSq1rCK0QCBBCQhAIOnvv3jrvWjrv3jqlWjql3ms6lDrvGTrvnDqlGTqlnHvvnBDvWhDv3hClWhCl3msQlBDvGRDvnBClGRClnFrv3lrvnKXv5nNSSnuEQhAhQnuEEFqEQlqEEHtS7+aca+bva+ZCazpSlO+cnDFS7+acKeZCKebvKXsZ7zEZ7zoZlK2ca61Ca62cKa1CKa3va63vKRBSlMWcnBAZlObFa+bFKa3Fa63FKZx7nOZ776177zoQGeaczq2czuacSubvSuZCSuacCOZCCObvCK2cSq1CSq2cCK1CCK3vSq3vCObFSubFCK3FSq3FCJzmvdbFnJzmlBBjQsXv5hBaEDoQShA6EOac73tajK2c71pajL3mvffFnL3mlGOMazrOazrO7zrOSjrOzvfO5ubF5py9nEJaOu/Fxc7F7zoxEL29lISMazpaUqW9xQghCHtaY4ScjBAhKeb394R7lIRza1pzaxkIAObe71pKSlpSY/f/5vf33oSMlAAIAHNzY/f//wAAAHz8esIAAAEAdFJOU////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wBT9wclAAAACXBIWXMAABcRAAAXEQHKJvM/AAAh2UlEQVR4Xo1c63LqPLINGChfANuSMbYVzDPNK8xjn58nlT+QKsIhgCl2UmetbhlIdr6p6QCWZVlWq+9SO08DwjHP88kxb+R3MkeBfyjnDep+A17LcWcem/LpG6yDhl3mSesreoj88SdEWXh2iWn/6XoPUdqahA39ucLw8h/uwzDypqqq2ayZ8adq8BWYoVgtUYfSX38ztmjyQROb9eVx4FH2Kcg1ydv3p0aXvS89NgeUGHL1Osp+Nh/6gh6entJ1HbwufzbcD32732CQz1wSJEl8h+1Zj+dtHKP+jL9fPnGSYFCz8669DxpDKW1Hig7e49ULsManH9/wxzAiAA/FxjXvs9imWn2DvvVF25HCbtnM3K5nFdai02+4fgfMfWjMLgx6GPmjAE4+Pn35B4ShNZvYbUft45jTbOMEucZtOMX7+8XvyEVlW5YRiW63zfyYVyHGzHFelBa8UWYN3FimcsHGzQRsFihfkrToUjsFhjKNPwD8U2eZAXKjMAz5M8LvCB+UgAFOgMghxGe0kR/8hfgEi7fWBi4+fGOT0iazOXA7NlVnIzxUn608dscOqFlj2xTDj8w5n0wmDZFT+cGg+cMjqMaGpdRn8XwC9eCRGw6B/0X7l1NfeIRBc21bA74EdkI0oKTE8yTEhd8g6ZJVmwVxHGYcRy8hpXHvJNwkb9wCw5VnyhTrmAnDCMy7SaZhRgaL6ukM6suZkycVb2KXvOXU2jCZbjBNgKxr8nm+DNc8udwaAW5d/4DBLCzeNs65WIb8AxVK4/j2190KQRJXLqjrMI4DUg7PUPqV4bNwZT4fVAGRQx1HKUPth3Ap68C9V7Elck/tLnHuHPBEmgFIcN5wae2nayCP0nlrxks81WIW+pY8aMe/Yjeo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" alt="Artistic Milliners logo"></div>
+      <div class="welcome-tag">Artistic Milliners &bull; AM&#8209;4 Washing</div>
+
+      <svg class="welcome-hero" viewBox="0 0 320 230" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="blockW" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3b7bf0"></stop>
+            <stop offset="100%" stop-color="#2a4bc4"></stop>
+          </linearGradient>
+          <linearGradient id="blockI" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8b6cf5"></stop>
+            <stop offset="100%" stop-color="#6d3fe0"></stop>
+          </linearGradient>
+          <linearGradient id="blockP" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#17b982"></stop>
+            <stop offset="100%" stop-color="#0e8f68"></stop>
+          </linearGradient>
+        </defs>
+
+        <!-- floor shadow -->
+        <ellipse cx="160" cy="204" rx="130" ry="12" fill="#1a2233" opacity="0.08"></ellipse>
+
+        <!-- process icon badges + connecting arrows (received -> washing -> issued) -->
+        <path d="M60,52 L128,52" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" fill="none"></path>
+        <path d="M192,52 L260,52" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" fill="none"></path>
+
+        <g transform="translate(60,52)">
+          <circle r="26" fill="#eaf0fd" stroke="#3b7bf0" stroke-width="2.5"></circle>
+          <path d="M-9,2 L0,-9 L9,2 M0,-7 L0,10" stroke="#3b7bf0" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+          <text x="0" y="42" text-anchor="middle" font-size="10.5" font-weight="700" fill="#2a4bc4" font-family="IBM Plex Sans, sans-serif">RECEIVED</text>
+        </g>
+
+        <g transform="translate(160,52)">
+          <circle r="26" fill="#efeafd" stroke="#7c5cf0" stroke-width="2.5"></circle>
+          <path d="M-10,-6 A11,11 0 1 1 -10,7 M-13,10 L-10,7 L-6,11 M10,6 A11,11 0 1 1 10,-7 M13,-10 L10,-7 L6,-11" stroke="#7c5cf0" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+          <text x="0" y="42" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5a3fc0" font-family="IBM Plex Sans, sans-serif">WASHING</text>
+        </g>
+
+        <g transform="translate(260,52)">
+          <circle r="26" fill="#e2f3ec" stroke="#14a973" stroke-width="2.5"></circle>
+          <path d="M-9,-2 L0,9 L9,-2 M0,7 L0,-10" stroke="#14a973" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+          <text x="0" y="42" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0e8f68" font-family="IBM Plex Sans, sans-serif">ISSUED</text>
+        </g>
+
+        <!-- WIP building blocks -->
+        <g transform="translate(70,120)">
+          <rect width="66" height="66" rx="10" fill="url(#blockW)"></rect>
+          <rect width="66" height="16" rx="10" fill="#ffffff" opacity="0.18"></rect>
+          <text x="33" y="45" text-anchor="middle" font-size="30" font-weight="800" fill="#fff" font-family="IBM Plex Mono, monospace">W</text>
+        </g>
+        <g transform="translate(148,112)">
+          <rect width="66" height="78" rx="10" fill="url(#blockI)"></rect>
+          <rect width="66" height="16" rx="10" fill="#ffffff" opacity="0.18"></rect>
+          <text x="33" y="51" text-anchor="middle" font-size="30" font-weight="800" fill="#fff" font-family="IBM Plex Mono, monospace">I</text>
+        </g>
+        <g transform="translate(226,120)">
+          <rect width="66" height="66" rx="10" fill="url(#blockP)"></rect>
+          <rect width="66" height="16" rx="10" fill="#ffffff" opacity="0.18"></rect>
+          <text x="33" y="45" text-anchor="middle" font-size="30" font-weight="800" fill="#fff" font-family="IBM Plex Mono, monospace">P</text>
+        </g>
+      </svg>
+
+      <h1>Washing WIP Report</h1>
+      <div class="welcome-about">
+        <b>About this tool:</b> A live Work&#8209;in&#8209;Process (WIP) tracker for the AM&#8209;4 washing plant.
+        Every gate&#8209;pass is logged once &mdash; goods <b>Received from Stitching</b>, later
+        <b>Issued to Finishing</b>, any <b>Returns</b> back to Stitching, <b>Finishing Returns</b> back
+        to Washing, and transfers with other washing units &mdash; and the app handles the rest of the math:
+        <i>Received &minus; Returned = Total Received</i>, <i>Issued &minus; Finishing Return = Total Issued</i>,
+        and <i>Total Issued &minus; Total Received = WIP</i>. These roll up instantly into Brand&#8209;wise and
+        Unit&#8209;wise reports, Daily and Monthly views, PO/Style lookups, and live charts &mdash;
+        no spreadsheets, no manual formulas.
+      </div>
+      <button class="btn" id="btn-enter-app">Enter Dashboard &rarr;</button>
+    </div>
+
+    <div class="welcome-side">
+      <div class="side-widget clock-widget">
+        <div class="clock-time" id="live-clock">00:00:00</div>
+        <div class="clock-date" id="live-date-line">&nbsp;</div>
+      </div>
+      <div class="side-widget">
+        <div class="cal-title" id="cal-title">&nbsp;</div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo-badge"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANwAAABUCAMAAADeZ6kGAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMAUExURf///wAAAPf393Nzc4R7hFpjYwAICHtze4SMhObm71JSUmtjY1paUikhKRAICObm3r29vRAZGZyUnKWlrcW9xZSUjN7e1joxOjExMbW1tSEhGUJCSkJCOpylnM7Fxc7O1lpSvRBSvVoZvRAZvTqEWjqE3ms6czrOGTrOnDqEGTqEnBDOWhDO3hCEWhCE3msQcxDOGRDOnBCEGRCEnOYZ7+YZra0Z760ZreYZzuYZjK0Zzq0ZjHvmWnsZQnvmGXu1WnsZEHu1GXu93nu9nFrmWloZQlrmGVq1WloZEFq1GVq93lq9nEJSEKXF5ubvvebvlFpS7zpSc+97nBBS71oZ7xAZ7zoZcxBSc8V7nBAZc+Z7zq17zuZK73uM5uZKra1K761KrXNSKWOMjHuMtXtSvTFSvXsZvTEZveZra+YQa+ZrKeYQKa1ra60Qa61rKa0QKeZKzlqM5uZKjK1Kzq1KjHNSCFqMteZrSuYQSuZrCOYQCK1rSq0QSq1rCK0QCBBCQhAIOnvv3jrvWjrv3jqlWjql3ms6lDrvGTrvnDqlGTqlnHvvnBDvWhDv3hClWhCl3msQlBDvGRDvnBClGRClnFrv3lrvnKXv5nNSSnuEQhAhQnuEEFqEQlqEEHtS7+aca+bva+ZCazpSlO+cnDFS7+acKeZCKebvKXsZ7zEZ7zoZlK2ca61Ca62cKa1CKa3va63vKRBSlMWcnBAZlObFa+bFKa3Fa63FKZx7nOZ776177zoQGeaczq2czuacSubvSuZCSuacCOZCCObvCK2cSq1CSq2cCK1CCK3vSq3vCObFSubFCK3FSq3FCJzmvdbFnJzmlBBjQsXv5hBaEDoQShA6EOac73tajK2c71pajL3mvffFnL3mlGOMazrOazrO7zrOSjrOzvfO5ubF5py9nEJaOu/Fxc7F7zoxEL29lISMazpaUqW9xQghCHtaY4ScjBAhKeb394R7lIRza1pzaxkIAObe71pKSlpSY/f/5vf33oSMlAAIAHNzY/f//wAAAHz8esIAAAEAdFJOU////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wBT9wclAAAACXBIWXMAABcRAAAXEQHKJvM/AAAh2UlEQVR4Xo1c63LqPLINGChfANuSMbYVzDPNK8xjn58nlT+QKsIhgCl2UmetbhlIdr6p6QCWZVlWq+9SO08DwjHP88kxb+R3MkeBfyjnDep+A17LcWcem/LpG6yDhl3mSesreoj88SdEWXh2iWn/6XoPUdqahA39ucLw8h/uwzDypqqq2ayZ8adq8BWYoVgtUYfSX38ztmjyQROb9eVx4FH2Kcg1ydv3p0aXvS89NgeUGHL1Osp+Nh/6gh6entJ1HbwufzbcD32732CQz1wSJEl8h+1Zj+dtHKP+jL9fPnGSYFCz8669DxpDKW1Hig7e49ULsManH9/wxzAiAA/FxjXvs9imWn2DvvVF25HCbtnM3K5nFdai02+4fgfMfWjMLgx6GPmjAE4+Pn35B4ShNZvYbUft45jTbOMEucZtOMX7+8XvyEVlW5YRiW63zfyYVyHGzHFelBa8UWYN3FimcsHGzQRsFihfkrToUjsFhjKNPwD8U2eZAXKjMAz5M8LvCB+UgAFOgMghxGe0kR/8hfgEi7fWBi4+fGOT0iazOXA7NlVnIzxUn608dscOqFlj2xTDj8w5n0wmDZFT+cGg+cMjqMaGpdRn8XwC9eCRGw6B/0X7l1NfeIRBc21bA74EdkI0oKTE8yTEhd8g6ZJVmwVxHGYcRy8hpXHvJNwkb9wCw5VnyhTrmAnDCMy7SaZhRgaL6ukM6suZkycVb2KXvOXU2jCZbjBNgKxr8nm+DNc8udwaAW5d/4DBLCzeNs65WIb8AxVK4/j2190KQRJXLqjrMI4DUg7PUPqV4bNwZT4fVAGRQx1HKUPth3Ap68C9V7Elck/tLnHuHPBEmgFIcN5wae2nayCP0nlrxks81WIW+pY8aMe/YjeowszEVfUaQPTIg1ez2C3AjjgDY4KarAQV8bNhgX9hEHZNkxgbxJ1QjnLC7vftqDkCtQYM5IXDC/zDw0GP3RlT4MdcFniuqdfajhAJs7HbInR/BgOnyiZqV2woPOq7UxRZ0MMPGDRAzs2Wgc2KrLaALKshhW1WFFKy9Zuta37ecBEFHjMbumZL5FTmZAYhAFEWYNRNtYQ5yDthWAKeo09XqxRlowrUPa8Un6jE41IqF4VhlBIZ3lx8suHzrWFbtKdL1Eua9N2XH3V2D2DLeuOqxLZRugZK67Zt8V2XAB5TPAlf/qXQybdCFlexMZS5AqPi+Pmg0lJXVt2UYxLK4OERtb4ovKgswVNRuUpoC50pI9GXGLRqe7ZOX9o2a0vhBKgnNqwM9CVafrGbyz7y5IrQlMMEKYml1H0HIGdHzm2KMm2FZAIgF36yt0L11C9QBlW8WJEtC8yZIneJ2tBx1GG45GEBKwHBv1A31ln7UhbWZBhMHYq5qDbGQqdA1+OJayEWinYlMgHui05oKMh9oOEaDddFwenmTGAioUd3BgCtS+x0XN+AlAudC4vibREEm+tiBwmgHiEEu+ynae2ByIFy0+RKO4eu8Tc81QFIlifWxLAGFXUN57SENv44rFarsEs2ZOkzfBuM2cVJWETpG+zQRtyvU4aWUG7uvA1sW9aHuII3OGiWSbIpwC07mCCTpUrtOkxez46OhoH+/FWlkHKhi8M3G8YOvgrQih19sOY9f6/O4U8PsYd14qaQuWmyKIicdp2aZAaRC7IsyQcTuGaiDp/og8zcGB4NDiMTdhVNIdROnp8tqH121XIKHr6sTQKfDg5tk8+CrN1B98PTpe/bbG1ZLjAwTKkYkNaM4tkcpiHPq+k3U/sA0Jb16Byb1WJaVe4DVIurZsJnEzD5X77hD2g/llOzCsbJriCTKHLtbpkfJ0uzboNmMmmcmqRhTY8Mpoz0ek7CZCve55FPqWzaJqjPaRUj+1GRpFC2IH+WBZwEmQc0NGVBAZy4EGI7bM2HcKyAs7+5JwChXBwvLObzGcrdhJjfG3Igwm1S2EH/BR6fLt5BoXShd+eJXRtUx0nzatPULEm6IOOVqI5lyAwjJtV4FJxvwxo82zSTMOIZ2qVd0ELAj3fNEbwNncqBTGQ0lYHLgKtz9dPqj6WM8pgfB0e3oun7BUA5YUsTTl0SZvCogu0MA+NwBnkltuq3eQEeyc58THHPDf19Biwms6C4RPADGRnItaEV5I5gIXAVnhQAc/beNBVaZGNi5GyZim48zrpglGDm4DjFtJdACPcldp2NG4zLLV6eLm0oXeQV5LNiJzqAnzCYHUg5PDKBZGbZLummuBFhHYzxkQNFI1CFKrH/EIpgiZvEiKvOQX1kHPhJmBEshTmHROEKHCwhFYZ4hqvwBq3BoYFtkwD0yohSDnelBDK8aQdFbahWM3ATXB00DKjasgACnS930JtyDxQNuoM22v1TLEjKHRS5cbCqTQwVpn495mxSBQUbiS7sD+pptcEzkUseKBeVITBqxKvSqYUlQ/2l7ui24MoIanudlsWOWMzdCGcgcgJv9BjX0Tp0eGYzBg3LdXmKvoBdDLGbLENbwBKCfzHrzqRf7Y5DzJdQOmvYkZZP8ZP+DQbVwV4VOcyjhT2PAz5a4T0hct8w852sYQqIHCh3Q66g9CA2b+FzhA74VBvO6TCjDgVJD29wRFBx8nRdid6reXX+ajk3HDLuh42jHtvDB+Ucnc1pDwaCJLAXk+JB7HD2wWm8wLBzBL8i14R2AeYyI1BuZ0auCswHbxVoBDneyHv9/SKC7YeDnduMk4DaUgyd+hO528BBg04nFQLhSwgLT7qsVNUbtXS/8jijy0Smpba0UWo4IfMq2MG2y0NALJJoW8sZKEeuX6Uq0fn55wrHX0BtaabT0Q4yRw4GEesNHq3wPhZ9J1gpaj3p2uQZyIVxt6k9chcoAIzkCNInHwjSic9Wno9YBX3NhIwEmDZ6MOBEnFxg+HGbW4HvyKBcGogDXVJB8F0B37MVxxH0RjwHVk9X1LeYHO3vS1D3M/8NQLk67MBho/E4udpwCq0yqmA1K66huA2Uw9ftvocOWsSpsHNxPMrYN674acbgqqWsr4AKywO1LZUoJGfXK2yoBk6fIrevYeeOEM8UgupAGwBUjXA7uuQcLVf/i4bUIojEQTkEjeiwD8kfo/0fIJTDEEVbgnLjxBZh9Q6Hh2HqwXpO+gvIlrRzGs8JcuBKCcK5NganCTCZJW+4mE0xFgiLTrSOGVc15BlCCaLx8wL+NRSITAp1PO1nVBxox8GyaHh5Y5APyp1KWlEgd+PKf8JOfEuvLYlclxjwySxgePNWZxJlCSs+KBMCFEpizAfu7B00GALEXpPJHEZkMqAl4TIRnYdMRIS0USjfkjvlhpgTNHcGDUX5y42qdMkMKJ/FAxmCxEK5soSyPA5m/XqD/P4Kg2bkkfvoiNx0urBBBWOSajTxuCz4iF8JU/DNQ3lKFxgxFz0BcE1BP1BRVg8yul/N603+U/Gvj7FlZxdQDhr+WegKlzGIHc6padcRrnEWoEl5m/WmAAaRrlc+tg9c9XtUQA/lTOSCKRVKl+xsUtH6fiES60PAv++EXqbMQUQ95YZtiCfOoQ7OXRd3GCJVZMWFODG5zZmUE9mHWsWY86QmKSlzEypBQQBGxG7GpB48Z8S+QmL1HUXm2LA8rby29Kzwg6nuQMrBzsFNSWCzIHNwMwMgx2tATibE3/idLZOqW+GmsbdzF7AQ7VVzDq47szKLICYBGnoB4j2CLYGnzJbKHBercStlDkIqTBtFewR/hRrzOEu9cC53L4ycROZyOqG1uKPw6sv9cB8hkqVj8Qt6nnJXyJyyJZznpNrWuHQhcoraXzdG2RTuHvRsEtSMr56GL7sYijyH25G18BsKGzxDFzQdBIvact7Ae0Qz9HRRI06DWMAR6SmXgmpFi+G2Yu+axNI4ELnqE31GqVBuzvi9pSuEe+C5FEXNizqqn0DKLbZnoKUKJe529YennK6f9QtbjxCldltNTR1Oz92uPWHEUbFZckjdCu4F5j9Vqwc/Fw4FZA7BAsVPOEED9mMTJwFcrTdxlylKdoTYvF0DdVBuBncYDjKxoBO6aqPW+5aMjcQVR/0BMZqYDeH3nyAhj8qcGHFqy6Ry6hMIM8t4fgAs1XImayjuFQNkjSHhYDVbkfIvBNji3CKuiLIY+tOzJa4NI/iGmIjJrHKfBXiAA4UotbvzcpuEGIhwMYL0p7UQccKoIANy7JDdUAnR1iBGXCJ+Tf5aivcgds4J5YQtk6nBzFF3CVLy7bHDUT9P64VrmtdgF3C3gKN4KnecY8aU2hY1VDCQrDrNxhjJfHn1bPl0gUaRpVvqilRi0D9g2jV8S6DhRBVixHDB0prxEKHapbp/tGQ8dzKMcAnCHVB/v9KAkXh4/tfGXD1bgnKfFXWXb/ztJpR5ClnI8yMMPaJ2xB3U1LB7JM/5rp5P4kcctxYh9PvRU44w5AogzTCAkTiidqiPunxBJIFYN8/nk3w2NjSxe3GWCTNT4hFkRXYD2vcGEchN4ST9hhtlDvHcXeamkDlqy/Tppk3uIPqS+s7Str5XrmomkzymFi9DN6sq9xi5gwMQjk5tCRGrEFKqsmcXUWkRSfs1lPIa4ypuRLBa5c0c9Y2DJEvr1HL+0JIyabZ4QiJh9wmBJ3rgPiJml969X7/8Bkq57ainXDc1Fp6VpS6R2bgbACnJz8XKfIJ6/BUtfrIb+GuhcL/ure1hkAGmSEuLiPLgfWHpLmpXB9k12xSXU81dGIPILguDM9e+6Ae2Kka06kl8dmgYReymd6nTwoYdWp+7j7Amv0vzH0DKXalQFuqhJHFoP59jBAOCnN5zu9MXLkK5gfIFrDMZpSwsdLKuc4o1G5a6EArticJtCVRnJ1oz2jawBVySLbjkvP/iSqQxiwWXM/sF6Kh9s9cwNAV0ZIl2hV+blsXQkOo1k57vNHgApZz4ltCppNzVfC4TH+ngBvz423iQiqdhkXBnlbuvN1aEfjxxS4og0xLd4BJxlZoXhB+kyeW0BpSyiSUrybiOQ9m2RbtW1HQyLifgVFAAuQsZXTTAkSeW7RvX4f95+1F8S7VznnLwUBwpR1B89M+fCpT2yi067oqExvZ7GDrZ+O0R0F9Kw32CfFeIwtLLw1byUBp/fX1xKnyt3k+cezoCHqOUiEvp/wFoChbnDiGP+pax+Jaxul/yuQ3nDkPY6LYo8ClazLO3Mrol2pPmfhPH/W2vR38Fg77RpQ/Kon6T7iFM65HUg4Cv8k363cGfMKhG9f+dt0K5MdkSlPtAVMB1DOUh4PY3etyU2F++vi5wRri+wYcpWtq2xxAgWhe6mijK597SnxIebvAgHd0RYklR4oXhbVeHiN0m9AdwDaX3UMiWcXKFgYQJpXLwg/gLN8gTIqKTCBTEoL/K5toWJRyk/mFAcpSPXPkLvtVq675vbvIIqIssffSIa9+/dTmY3XzLTtyv6eLtUDVwxaBhSTze99dgorZ+s9zEA7TlSTlIMVKQYiSC1Nf5MfCUhTuouEltX/TAfW9tCcHdy00QYG6G89q9j78HqPAQz3nK2cLESxfH3SJLZeIee9FxDduV7pVvaHj8frw8om+g0+vv9PfzIMOQJr5W3XJUs14v+AbSxlcN9yfvU1xulJMKBbn7FxjMDvVVfUsx4mP4dC08TK5S25PedH+m/4Xz8Vy552euBLnYrzmjnh//HBmKVPV3A/pKrfM/8vVD5ZcHuXC/nWUff0kL/qDmRuZ/RA6UW5z/RcrRFARxvGphHeGZcxVDetGGfa981N6e6Z/I50gXV1oQ8Jj+Of29OjoW5ExPHirl9Aductmf9e1u9kDr/ZPkq0V/9gAwBRk8lAPdL8qcg/P2ZqwNlwjAYHnRXO6QTm4fcb+Okv0lEbVvQNCR8fzvJ0pJRuIbsZXW6Sa/gN7prwig5CNnKQvwet/mjtz3TLBBdc1CR1MQdB/GhM/NMtlwt8c1Z1AEN/n75YlSwNdyUTWvllxJyGNJnlDgJPp2ctSygh+ctpAvT1lHc/GgSnBNqx+b6G048afy48/kCiASAb4DKbdw54NdfCTJwpoYESSUSpl1TP/ws8Uu/P0CFy4cIOT6nM5yHGSh53bdD/72RA/3s9/8dx15D32ZRynjp0fujjjh4Vmshk7FJN0wHDTG789BW5qs5uZxFZs2m1b9cvXfMET4D5mEiJ4bBKs/ljD4QP8wf8ZDf/4NHuruxb7kj74Df3rrzp/Is/oHDjWv6CLGAp/BbAPkzgjHk/jDFNAlH4lzn2+Io3TR1PehJYCUTnWwxBTYEG11meHehqU7KigrpfS6Fv1530bhR8VDSz3o2UPXBMkAu/UtRzGOPApb0s5dMU64le06W0GpcEkybqb90oR/qvwoDEsTQ0vWu+QVN8kc0DlnQ3lEPwIcufrJc0YJkqnHOnr/bQmzzDqUThC54amEn3piZ3K79sE7/Yl0KUPxJQ99pb/k68ic9C254gzktrJtbOpVMns1ZjrbGh96yPCYH+SHibqvDN71ypouVsLBhUDEwxQRDl4eJI+Cn4ZqWGB0UzKEsy3KJdMErxRVBKNheF0hWkOReSVtyf79U7QP7e3Wpb+EAjUCq6Veq/BVkHPxUOCN0GVOQluHC1tj3Fy8dGH2ktKJBJzwJ8cUx1MKqUuqsVkdxrHPXNVUGUQJ5QkTwnGgfyELE4IYFKXZpounmIto2F6TJbp/4TJC4qqzZJKk9hN2CALM+++Y6K8Ci1LHA3mCTxbQZqzVdnIilDO6EULkTPBpsxBEgQ/ikt2KziMzvrI+L0zOEShzZ9WsRnHnd91IjHAUbkIrmbPy/Ki0YbhjghypG5mueW/cZx1x2w3aNqmB0cLlx/eKOqkNUcSTX3CnHyG78SPVmvvAUQIvsUqbSCUPUulPGRX4PfEkuK64+pUFyzhrd9wd53gPmmK6GcGVZIIpXcr61AYu4f7cONS91/UVavbZQb94HYveozo5u7PbniVXJzXVn4Hs3gx1TSuuL0/l9RklIPfFrQAuyGw0r8VDP2R8FDkU+aPgwx3++pZSrUf8DmYBsxkCbhsnYM443tWIxG1rkzOc54T5lskUxzEi9Y5pU0xvtuti9Do1D3vibdAcJ8f8KNkyfBjEkJuEzPE5vnPZItpxMU52CDRFjJs3aELkJLuDy5JH9y1BW0dMkJIf+V8lFPU6Po+6+R4V9NvGC4jbK5DbAKvxtBsDp+l4nIzjZAoMx8zcHtVlsQHXwhXVDKKnSHZPCU3AxG2CXyIG5Fy2iIDqPJ/B5Ov+xpxbSaV5/gN3YCSUqyaTJt61/vYHzDhYGXCPkVYoDlKp9fy9NxHK1Vdu+FPmRly3DE1SLQN4l8KByYf88kcBxZ1dXwpuG+8CNFeZy2LFg3lNojDBh7qgrnXCpK6pMHgmXcB9m3Bj8rRzc1IO5IIgzBoosdN93+w+TsVAqULoC9rGnz3grgDK1eE02dlwDPmBzmT+63NFNxNwpdAJGJav4Wi0uXLl8GsN5DANEEthozvl4GpCxeMpw5fFa09NJkVcWouZMWjO1VdpuH+S1BVNVIoyJlQwR1EH2w+URwl48FVFelOT37HxZ8MhIjW2ugC5AxzKjnYuxqOhVlaZjc8ddIe5GqAI5ICn8X84NW8UqlSQC8ZjpRyQAwWIy9GBNvKUNlhytwJVsw+upnGlsWbrFMaGyBk4umY5YfIiE5VoB2tGWUIl9gDgMPuj1J/KF/gCqV7vWwEEfxZgq+AWpJyAQXO1mzPZMujAb4duCqcZIStT75nqzCRnlPl30JTna8291D7JBpSjjET1eaLIKY9JlezW5EdIkmS4XeCOiFugCSuy35gyacMnKokHw1sxTrX7spLpnRZFbVi2tV1ZK9tmwA1NdS0kKmGTeQfzUQFMORLKhVt6KBgoCPWKiW+5bO1fLhA5Y9I2f6W8MdkaOmFcMdVvnCgqypay89LEup0brdxkMIeyBHJMPRvu0/VabLwqlAniRVCOFk8zH4EbfAD0hgLM6Qt8hpbmtW6FTsDgcmrtLkD4ImsbghqQ5cJsWdhVBt8CqJkDG8DellAoiOfOZ65bMoMI/jBuvIoGkWQNDyzLGX5GO1j1TdU4swq7qcqcBEF81Wk+yJdiDCBO3CtsmvnEm4KS7pXNTlCMAaybaEuhXL7cFF9RmtlduKsRQ6aF2UBzY/4548nnNWPKMz6nLEzOS65yM1Vf6AVxChZ1ZjfgIaZlccuwqprKwRmhQmEkDrbk6pcducYFSq6AFs6XgDiEXYCVo03QIeQxdgT7oUxYJKTcjNmMmv3yxY3QfDZrmFaq2jJwiBXpZ8uG6SSGh3JaOFjHalTsL63pMOqw4IiZCzz9ZGIr7p+dR7pKA8/m3LzDljI9FjEnvMvswPcO4Gcs3xtGoeGUm0KAxm0sKLfINFUDCsXYRbx0SUBvhBgSN4qbYMX3CdQ6EFl5aYKp9wET7J8uipxzs6Mq/iHC3WbQLN0snwM5yFS0cEdJfL58CXJzpl5BWx4n1JYg5wcqmwBxVrtz3J1yz5VsIw3eEV8Stxa+mjADUzaeg+x0OdnpOx8bS4aVyRBr5xNJFsldYBjyeMp1r/A2sh35VdQ/VD8dr6sUBKTAV32IYRLYrA5e495DIXJVnED5TbjTuS/Na5NX5+0SpGuIx8Vg8EwwPV0Kea+A7tcpFMoFoJy4XyAnkDPMmGXuKZQUQbNSS8scsryKO9l7dSE4+I070hNii6fvJFNl3py7Kd9wAXLNtQ6hLW3YcZEOwSqQuAIjmAHiZRYL2gSc44fGTpEF0pBYG2BaJN10r8gFwVamsBxGxWiZN+egI+maDsjtidyfKnhjSiGKMOIYsKkmGO9hzcRFDnkK5JghhMHm4HLwNEuSWlV8ou2cOkHyNfn64aWWDXUmeVP7So4BVwis2eBHKQe0EIkj4DAwNRz56MD9m4WwJPT/QW0BaCYHmoQwRBCW0djJewXwWPC85QaeP3Fsh3RPJrPkuoln84kw6tOKGFUJogJBbiDu12KJueYNe83WFOSMZEE3ktAu6USzXcRXzKBYKVlpIb4pJ0ekAdg11XIbmB2rmw5BIRRv0QI5ky3O2wXk5/wMXXLwQqXKEcwHdYWSr+K5NoD6sXwLq4MGIOWyBFMMFfM5y4986zHljrgL4dqBUyTVBlofg6cV9FlPni1RyTSuoabidPXwae1fqghMDWcXUozQRawGrmvCm6RqODvskWvcCHFwLZmOM+gs5t6kqWhL49zB1otx9RzT+Y+7eMwvS/DJ6DzH4w6RAX7hPsv1blu5TWbDKUyBGCF5yhYThXEx+UQywZwtmPep2vKyAh7H6gPWtZCMTrpfiIMgNGLEJQOpEcpJDjFTU6LUbphONNu8DDXJGFFDmaYWoiaZEyINfO+Mb5pA4aDb3CW08cy1RZMsdM9gZFoIYAVWoPOPP7j/UmBIwIjAH/CHIMg1De4JOrClICfJa2cLfQVFNwvhCIAO06ykGDBhnZSDcZtUh+wCDsQ4JzGmBXhQ5kRb9pS7rEfPUJPKy+WVVGxAL82xeU5CaINPYsEQl29n4P4EHE6NQ4Ie3xGv0ISr47xwcKVW8PE/lPsQCHzyh19w4af88suD1AYBLNCYwepUslBgcBLMpVu12QGkgGAwOsPwSkvxUceZoZuwJZQNkJOsPUQF6lsy350tQTnQiC8N5GNUQv6oPGYhBRw3zaH23aurUEc/rxTkEEvQVKhpxTNgwrmcIcjRuCGWQ6QaQo+E8sIcVAoK/FKjcIuYsbi/RhuYVJpvCeSoLYeSB+RWL/9DWYNkLDCJsOZrs2VuCQe/J+WobCJoH6EcjHi5gJ0DW7ZfEERPuacXyZht5GVsIf0AVn4t3vbApzvCZYUly9Zvglyni1RsDIMHw3lk5jrcr+pQW0TXcDvoPAOoJ/nTf8Lg3zj6GsEMunLDBcsVOLnzkbNMIaQEWpKDSZglstytofjmk4G4X083yn31Mge2ZFRAttx/Scp5DmXKpCi6NZyRp7U42dUmW1vRQvmMTkvD173hs5e1IJdIoALmaA3kBTVo9yp2LoRegCyB5WCc4Qj/Db/Vjels80WlPp7jU55NuZfwG65KM2/i+iTpyHPVliulHNnyTrmr2q6W+paUA1teSqHcLOCbQJAjVM+uRVpL0nzjunHX8T1uOIulsiVEWib4aR8hZozlJZ/5zCVAbpQxkQWaBFhQn1BfqCrxHyp+nuqfAjRJsuDi+9i/bSzakhl1J2oSeEA51EhGiwDxeaQctKV6KCJzkq5MbQmtfteWnnLClpImBg2lMgfdEa4Q80D/mYx6V+j6KTEl4SKuc5UjGmneacTb1m4+9K32borxCxAR/4EBuJ3wlFeJn2nrw5hvwKFTzb1j0i/CT3IF6MUUNDgbc1KOpoDIUXd8k7kr9A/ZsqdcYi9Pa/FQMDDoCKVcFa51ReYIQStLBHnrdbFOL5EkvqHP9OmiK+sIPjKT8C2ZwYDIFWs7ggOOkSMQuoFg4inoaXirQoQwDjYWvhqNOBXKJRtDWxKdoYxmcBz8oc9EyoAIpNyXZZxDyu17mYskKhCMv5RyQC66vIiH8t5TDsNvgvWX2DkQuT4BDURIa4R+CIh1CSYFYgxxT3u+Wg7PAf0DOViLdS3uvoiWD3f+C7hm6wzRQSjvdQwlWJWX4PieALvOp8CI9vgIN4wy19s5UO7fxEMohxGLtgTtPzAiyaxVygEhpRzKM8zaST2chM7VCzOv1gh7V6JLoVkQ7iEIrxGBp/TOiFwuCmX9RicZql6iAfqW376+1pf1DxoVdhLBUnfIuPUItxeOxDNTKrlyTOSEF0/wHSdzlTl6KNAdGd1IpRzcrwVf3ALlLuqhiLaEihXkQLm9Lkk0o7X++wJEEGM48rsNV4ZBOeapculVknVLiyA8RCSdVOi0qYAcQpcVjP7uKl7x/+F7Q6v/KkL+XI4weyYrGM+F4hx4UwDKXRCZUK1NZtwLYIKot3PRikE3tcxQkDuqh0Jy0Lf8usncV0sVKwjxBSHSpuFra0XAMC9HjOiW1awaGwiavHdItsQQohZmDkY+mTK6m8XBE8zmxoQbiU/hoPy3QE284j+eQLAqUXKhMrcGd6hE5ecdLoAt5xOwJRWK+pbMqPfL6dCW8ookKsXOKXIRKn/InGrOFHPJ8JWhuESwJbSQvLKQ1OSeC+wj44YKvvv7DLMO5BD8bRHbwR3mfwvZnh0L8flf/NF/DqJw7ljmb4dmbnsej+EGwbdUbUm2ZCCH8VxBojmzy3uZqyhz4qFAvChzj9oSGFHmfFRw15aCEGROFMoIGocLJh2JAji+iz857Ckn3FOu5LXQ/A9f0jU1Qh5gyqicNt8t9d+48N+59D9y7P9uH/4gksznDEHYL+Jo9LsMucUT9a4I1OhJ9nMarlt63/KTMkfaws5RW3o799XLHCofZI6UI85qpksYVnlfaML3Q4HRSYJVz5ac4UpesznO4s0blOngCIPHuQAzE8kbAN9b6SdoS74IjOhGkNvLFELmKNhMNc2XI6pRyNR8oh5K71tC5nRpLwb25Y6CCMr1uzyqUB61pZoCfderpQnjYGdnmNkLOJVvjDbKPdyccJI+gtmyL+nT/wNQ+4i7I6POyAAAAABJRU5ErkJggg==" alt="Artistic Milliners logo"></div>
+    <div class="titleblock">
+      <h1>ARTISTIC MILLINER&#8209;04</h1>
+      <div class="addr">PLOT 4 &amp; 8 SECTOR 25, KORANGI INDUSTRIAL AREA, KARACHI, PAKISTAN.</div>
+      <div class="sub">Washing WIP Report — Live</div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="entry" class="active">Data Entry</button>
+    <button data-tab="brand">Brand&#8209;wise WIP</button>
+    <button data-tab="unit">Unit&#8209;wise WIP</button>
+    <button data-tab="daily">Daily WIP</button>
+    <button data-tab="monthly">Monthly WIP</button>
+    <button data-tab="lookup">PO / Style Lookup</button>
+    <button data-tab="transfer">AM4 &#8596; Other Washing (Movement)</button>
+    <button data-tab="flow">Flow &amp; Charts</button>
+  </nav>
+
+  <!-- ENTRY TAB -->
+  <section class="panel active" id="panel-entry">
+    <div class="card">
+      <h2>New Gate&#8209;pass Entry <span class="hint">is browser mein hi save hoti hai</span></h2>
+      <div class="grid-form">
+        <div class="field">
+          <label>Type</label>
+          <select id="f-type">
+            <option value="Received From Stitching">Received From Stitching (Received)</option>
+            <option value="Washing Return to Stitching">Washing Return to Stitching (Received&#8209;Return)</option>
+            <option value="WASHING ISSUE TO FINISHING">Washing Issue to Finishing (Issued)</option>
+            <option value="fINISHING RETURN TO WASHING">Finishing Return to Washing (Issued&#8209;Return)</option>
+            <option value="AM4 WASHING TO OTHER WASHING">AM4 Washing to Other Washing (Issued&#8209;Transfer)</option>
+            <option value="Other Washing to AM4 washing">Other Washing to AM4 Washing (Received&#8209;Transfer)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label>Send From</label>
+          <input list="units-list" id="f-sendfrom" placeholder="e.g. AM7">
+        </div>
+        <div class="field">
+          <label>Send To</label>
+          <input list="units-list" id="f-sendto" placeholder="e.g. AM4 / unit code">
+        </div>
+        <div class="field">
+          <label>Brand</label>
+          <input list="brands-list" id="f-brand" placeholder="e.g. BUTLER MENS">
+        </div>
+        <div class="field">
+          <label>AM PO / Style#</label>
+          <input id="f-ampo" placeholder="e.g. 12345-AM7">
+        </div>
+        <div class="field">
+          <label>Item Description (Style)</label>
+          <input list="items-list" id="f-itemdesc" placeholder="e.g. 7587 BAGGY LIGHT... [BUTLER MENS]">
+        </div>
+        <div class="field">
+          <label>Cut No.</label>
+          <input id="f-cutno">
+        </div>
+        <div class="field">
+          <label>Quantity</label>
+          <input type="number" id="f-qty" step="any" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Gatepass #</label>
+          <input id="f-gatepass">
+        </div>
+        <div class="field">
+          <label>Item / Remarks</label>
+          <input id="f-remarks" placeholder="optional">
+        </div>
+      </div>
+      <datalist id="units-list"></datalist>
+      <datalist id="brands-list"></datalist>
+      <datalist id="items-list"></datalist>
+      <div class="actions">
+        <button class="btn" id="btn-add">+ Add Entry</button>
+        <button class="btn secondary" id="btn-import">Import CSV</button>
+        <button class="btn secondary" id="btn-export">Export CSV</button>
+        <button class="btn danger" id="btn-clear">Clear All Data</button>
+        <input type="file" id="file-import" accept=".csv" style="display:none;">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Entries <span class="hint" id="entry-count">0 rows</span></h2>
+      <div class="tablewrap">
+        <table id="entries-table">
+          <thead>
+            <tr>
+              <th class="name">Type</th><th class="name">Date</th><th class="name">From</th><th class="name">To</th>
+              <th class="name">Brand</th><th class="name">AM PO</th><th class="name">Style</th><th>Qty</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="entries-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- BRAND TAB -->
+  <section class="panel" id="panel-brand">
+    <div class="card">
+      <h2>Brand&#8209;wise Compile Report</h2>
+      <div class="kpi-row" id="brand-kpis"></div>
+      <div class="tablewrap">
+        <table id="brand-table">
+          <thead>
+            <tr>
+              <th class="name">Brand</th><th>Received From Stitching</th><th>Other Washing &rarr; AM4</th><th>Returned to Stitching</th>
+              <th>Total Received</th><th>Issued to Finishing</th><th>AM4 &rarr; Other Washing</th><th>Finishing Return to Washing</th>
+              <th>Total Issued</th><th>W.I.P</th>
+            </tr>
+          </thead>
+          <tbody id="brand-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- UNIT TAB -->
+  <section class="panel" id="panel-unit">
+    <div class="card">
+      <h2>Unit&#8209;wise Compile Report</h2>
+      <div class="rowbar">
+        <div class="filterline">
+          <label style="margin-bottom:0;">Brand Filter&nbsp;</label>
+          <select id="unit-brand-filter"><option value="all brand">All Brand</option></select>
+        </div>
+        <button class="btn secondary" id="btn-export-unit-flow-excel">&#8681; Download Excel (Unit &rarr; Unit Flow)</button>
+      </div>
+      <div class="tablewrap">
+        <table id="unit-table">
+          <thead>
+            <tr>
+              <th class="name">Unit</th><th>Received</th><th>Other Washing &rarr; AM4</th><th>Returned</th><th>Ttl Received</th>
+              <th>Issued</th><th>AM4 &rarr; Other Washing</th><th>Ret from Finishing</th><th>WIP</th>
+            </tr>
+          </thead>
+          <tbody id="unit-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Unit &rarr; Brand Breakdown <span class="hint">har unit mein kaunsa brand kitna aaya/gaya</span></h2>
+      <div class="tablewrap">
+        <table id="unit-brand-table">
+          <thead>
+            <tr>
+              <th class="name">Unit</th><th class="name">Brand</th><th>Received</th><th>Issued</th>
+            </tr>
+          </thead>
+          <tbody id="unit-brand-body"></tbody>
+        </table>
+      </div>
+      <div style="position:relative;height:340px;margin-top:16px;">
+        <canvas id="chart-unit-brand"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- DAILY WIP TAB -->
+  <section class="panel" id="panel-daily">
+    <div class="card">
+      <h2>Daily WIP <span class="hint">koi bhi date select karein — usi din ka Received/Returned/Issued/WIP</span></h2>
+      <div class="grid-form" style="grid-template-columns:220px;">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="daily-date">
+        </div>
+      </div>
+      <p id="daily-nodate-notice" style="margin:12px 0 0;color:var(--red);font-size:13px;display:none;"></p>
+    </div>
+
+    <div class="card">
+      <h2>Brand&#8209;wise — Selected Date</h2>
+      <div class="tablewrap">
+        <table id="daily-brand-table">
+          <thead>
+            <tr>
+              <th class="name">Brand</th><th>Received</th><th>Returned</th>
+              <th>Ttl Received</th><th>Issued</th><th>Ret from Finishing</th>
+              <th>Total Issued</th><th>W.I.P</th>
+            </tr>
+          </thead>
+          <tbody id="daily-brand-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Unit&#8209;wise — Selected Date</h2>
+      <div class="tablewrap">
+        <table id="daily-unit-table">
+          <thead>
+            <tr>
+              <th class="name">Unit</th><th>Received</th><th>Returned</th><th>Ttl Received</th>
+              <th>Issued</th><th>Ret from Finishing</th><th>WIP</th>
+            </tr>
+          </thead>
+          <tbody id="daily-unit-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- MONTHLY WIP TAB -->
+  <section class="panel" id="panel-monthly">
+    <div class="card">
+      <h2>Monthly WIP <span class="hint">Opening WIP (pichle mahine tak) + is mahine ki activity = Closing WIP (agle mahine ki Opening)</span></h2>
+      <div class="grid-form" style="grid-template-columns:220px;">
+        <div class="field">
+          <label>Month</label>
+          <input type="month" id="monthly-month">
+        </div>
+      </div>
+      <p id="monthly-nodate-notice" style="margin:12px 0 0;color:var(--red);font-size:13px;display:none;"></p>
+    </div>
+
+    <div class="card">
+      <h2>Brand&#8209;wise — Selected Month</h2>
+      <div class="tablewrap">
+        <table id="monthly-brand-table">
+          <thead>
+            <tr>
+              <th class="name">Brand</th><th>Opening WIP</th><th>Received</th><th>Returned</th>
+              <th>Issued</th><th>Ret from Finishing</th><th>Closing WIP</th>
+            </tr>
+          </thead>
+          <tbody id="monthly-brand-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Unit&#8209;wise — Selected Month</h2>
+      <div class="tablewrap">
+        <table id="monthly-unit-table">
+          <thead>
+            <tr>
+              <th class="name">Unit</th><th>Opening WIP</th><th>Received</th><th>Returned</th>
+              <th>Issued</th><th>Ret from Finishing</th><th>Closing WIP</th>
+            </tr>
+          </thead>
+          <tbody id="monthly-unit-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOOKUP TAB -->
+  <section class="panel" id="panel-lookup">
+    <div class="card">
+      <h2>Brand &rarr; Style Lookup <span class="hint">pick a brand, its styles drop in, then pick a style</span></h2>
+      <div class="grid-form" style="grid-template-columns:1fr 1fr;align-items:end;">
+        <div class="field">
+          <label>Brand</label>
+          <select id="lk-brand"><option value="">— select brand —</option></select>
+        </div>
+        <div class="field">
+          <label>Style</label>
+          <select id="lk-style" disabled><option value="">— select brand first —</option></select>
+        </div>
+      </div>
+      <div class="lookup-result" id="style-lookup-result"></div>
+    </div>
+
+    <div class="card">
+      <h2>PO / Style# Lookup</h2>
+      <div class="grid-form" style="grid-template-columns:1fr auto;align-items:end;">
+        <div class="field">
+          <label>AM PO / Style#</label>
+          <input list="ampo-list" id="lk-ampo" placeholder="type or pick a PO / style code">
+          <datalist id="ampo-list"></datalist>
+        </div>
+        <div class="field"><button class="btn" id="btn-lookup">Search</button></div>
+      </div>
+      <div class="lookup-result" id="lookup-result"></div>
+    </div>
+
+    <div class="card">
+      <h2>All PO&#8209;wise WIP Report <span class="hint">poore data ka PO&#8209;wise breakdown — Excel mein download karein</span></h2>
+      <p style="margin:0 0 14px;color:var(--ink-soft);font-size:13.5px;">Har PO ka Brand, Style, Unit, Received, Returned, Ttl Received, Issued, Ret from Finishing, aur WIP — ek Excel file mein.</p>
+      <div class="actions" style="margin-top:0;">
+        <button class="btn" id="btn-export-po-excel">&#8681; Download Excel (All PO&#8209;wise WIP)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRANSFER TAB -->
+  <section class="panel" id="panel-transfer">
+    <div class="card">
+      <h2>AM4 &#8596; Other Washing Transfers (Movement) <span class="hint">Unit&#8209;wise groups, har unit ke andar brand&#8209;wise breakdown + subtotal</span></h2>
+      <div class="kpi-row" id="transfer-kpis"></div>
+      <div class="tablewrap">
+        <table id="transfer-table">
+          <thead>
+            <tr><th class="name">Brand</th><th>Received (Other &rarr; AM4)</th><th>Issued (AM4 &rarr; Other)</th><th>WIP</th></tr>
+          </thead>
+          <tbody id="transfer-body"></tbody>
+        </table>
+      </div>
+      <div style="position:relative;height:340px;margin-top:16px;">
+        <canvas id="chart-transfer-unit"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLOW & CHARTS TAB -->
+  <section class="panel" id="panel-flow">
+    <div class="card">
+      <h2>Process Flow <span class="hint">Stitching &rarr; Washing (AM4) &rarr; Finishing — live totals</span></h2>
+      <div style="overflow-x:auto;">
+        <svg id="flow-svg" viewBox="0 0 860 260" style="width:100%;min-width:760px;height:auto;font-family:'IBM Plex Sans',sans-serif;">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a6b7a"></path>
+            </marker>
+            <linearGradient id="boxGrad1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#3b7bf0"></stop>
+              <stop offset="100%" stop-color="#2f6fed"></stop>
+            </linearGradient>
+            <linearGradient id="boxGrad2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#8b6cf5"></stop>
+              <stop offset="100%" stop-color="#7c5cf0"></stop>
+            </linearGradient>
+            <linearGradient id="boxGrad3" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#17b982"></stop>
+              <stop offset="100%" stop-color="#14a973"></stop>
+            </linearGradient>
+          </defs>
+
+          <!-- Stitching box -->
+          <rect x="20" y="90" width="170" height="80" rx="14" fill="url(#boxGrad1)"></rect>
+          <text x="105" y="122" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">STITCHING</text>
+          <text x="105" y="144" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="11">units (AM7, AM11...)</text>
+
+          <!-- Washing box -->
+          <rect x="345" y="70" width="170" height="120" rx="14" fill="url(#boxGrad2)"></rect>
+          <text x="430" y="115" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">WASHING</text>
+          <text x="430" y="134" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="11">Artistic Milliners AM&#8209;4</text>
+          <text x="430" y="158" text-anchor="middle" fill="#ffe27a" font-size="13" font-weight="700">WIP: <tspan id="flow-wip">0</tspan></text>
+
+          <!-- Finishing box -->
+          <rect x="670" y="90" width="170" height="80" rx="14" fill="url(#boxGrad3)"></rect>
+          <text x="755" y="122" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">FINISHING</text>
+          <text x="755" y="144" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="11">post&#8209;wash finishing</text>
+
+          <!-- Stitching -> Washing (received) -->
+          <path d="M190,110 L345,105" stroke="#5a6b7a" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+          <text x="267" y="95" text-anchor="middle" font-size="11.5" font-weight="700" fill="#238061">Received: <tspan id="flow-recv">0</tspan></text>
+
+          <!-- Washing -> Stitching (return) -->
+          <path d="M345,150 L190,150" stroke="#5a6b7a" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+          <text x="267" y="168" text-anchor="middle" font-size="11.5" font-weight="700" fill="#b4402f">Returned: <tspan id="flow-ret">0</tspan></text>
+
+          <!-- Washing -> Finishing (issued) -->
+          <path d="M515,105 L670,110" stroke="#5a6b7a" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+          <text x="592" y="95" text-anchor="middle" font-size="11.5" font-weight="700" fill="#238061">Issued: <tspan id="flow-iss">0</tspan></text>
+
+          <!-- Finishing -> Washing (fin return) -->
+          <path d="M670,150 L515,150" stroke="#5a6b7a" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+          <text x="592" y="168" text-anchor="middle" font-size="11.5" font-weight="700" fill="#b4402f">Fin. Return: <tspan id="flow-finret">0</tspan></text>
+
+          <text x="430" y="230" text-anchor="middle" font-size="11" fill="#5a6b7a" font-family="'IBM Plex Mono',monospace">Ttl Received: <tspan id="flow-tr">0</tspan> &nbsp;|&nbsp; Ttl Issued: <tspan id="flow-ti">0</tspan></text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Brand&#8209;wise Chart <span class="hint">Received vs Issued vs WIP</span></h2>
+      <div style="position:relative;height:340px;">
+        <canvas id="chart-brand"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Unit&#8209;wise Chart <span class="hint">Received vs Issued vs WIP</span></h2>
+      <div style="position:relative;height:340px;">
+        <canvas id="chart-unit"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note"><span class="credit">Powered by Aliyan Farman<br>Senior Executive</span></footer>
+</div>
+
+<script>
+const STORE_KEY = 'wip_entries_v1';
+
+const TYPES = {
+  RECV: 'received from stitching',
+  RET: 'washing return to stitching',
+  ISSUE: 'washing issue to finishing',
+  FINRET: 'finishing return to washing',
+  OUTTX: 'am4 washing to other washing',
+  INTX: 'other washing to am4 washing'
+};
+// canonical display strings (must match the Data Entry dropdown options exactly)
+const TYPE_CANON = {
+  RECV: 'Received From Stitching',
+  RET: 'Washing Return to Stitching',
+  ISSUE: 'WASHING ISSUE TO FINISHING',
+  FINRET: 'fINISHING RETURN TO WASHING',
+  OUTTX: 'AM4 WASHING TO OTHER WASHING',
+  INTX: 'Other Washing to AM4 washing'
+};
+// alternate/short names seen in some source files — resolved silently on import, no UI change
+const TYPE_ALIASES = {
+  'received': TYPE_CANON.RECV,
+  'received from stitching': TYPE_CANON.RECV,
+  'received-return': TYPE_CANON.RET,
+  'washing return to stitching': TYPE_CANON.RET,
+  'issued': TYPE_CANON.ISSUE,
+  'washing issue to finishing': TYPE_CANON.ISSUE,
+  'issued-return': TYPE_CANON.FINRET,
+  'finishing return to washing': TYPE_CANON.FINRET,
+  'issued-transfer': TYPE_CANON.OUTTX,
+  'am4 washing to other washing': TYPE_CANON.OUTTX,
+  'received-transfer': TYPE_CANON.INTX,
+  'other washing to am4 washing': TYPE_CANON.INTX
+};
+function normalizeTypeValue(raw){
+  if(!raw) return raw;
+  const key = String(raw).trim().toLowerCase();
+  return TYPE_ALIASES[key] || raw;
+}
+// long facility names seen in some source files, mapped to the short unit codes used everywhere in the app
+const UNIT_ALIASES = {
+  'artistic milliners (am-4)': 'AM4',
+  'artistic milliners (am-4c)': 'AM4C',
+  'artistic milliners (amg)': 'AMG',
+  'artistic milliners (am-14)': 'AM14',
+  'artistic milliners (am-15a)': 'AM15A',
+  'artistic milliners (am-pqg)': 'PQ-GU',
+  'artistic milliners (am-6)': 'AM6',
+  'artistic milliners (atelier 1)': 'AT1',
+  'washing': 'WASHING',
+  'finishing-1': 'AM4',
+  'artistic milliners (am-12)': 'AM12',
+  'artistic milliners (am-15x)': 'AM15X',
+  'artistic milliners (am-11)': 'AM11',
+  'artistic milliners (am-7)': 'AM7',
+  'artistic milliners (am-4ct2)': '4T2'
+};
+function normalizeUnitValue(raw){
+  if(!raw) return raw;
+  const key = String(raw).trim().toLowerCase();
+  return UNIT_ALIASES[key] || raw;
+}
+// "AM4 → Other Washing" counts as an Issued everywhere — but always shown as its own visible column, never silently merged.
+function isReceivedType(type){
+  const t = (type||'').toLowerCase();
+  return t===TYPES.RECV;
+}
+// Movement (Transfer) tab shows ALL AM4→Other Washing transfers.
+// Every other tab only counts AM4→Other Washing for POs that were actually
+// received via "Received From Stitching" — this builds/caches that set of valid PO numbers.
+let _poSetCache = { key: null, set: null };
+function getStitchingReceivedPoSet(){
+  const key = entries.length + ':' + (entries.length ? entries[entries.length-1].id : '');
+  if(_poSetCache.key === key) return _poSetCache.set;
+  const set = new Set();
+  entries.forEach(e=>{
+    if(e.type.toLowerCase()===TYPES.RECV && e.ampo) set.add(e.ampo);
+  });
+  _poSetCache = { key, set };
+  return set;
+}
+// Issued = Issued-to-Finishing, PLUS AM4→Other Washing but ONLY for POs traceable
+// back to a "Received From Stitching" entry. Pass e.ampo as the second argument.
+function isIssuedType(type, ampo){
+  const t = (type||'').toLowerCase();
+  if(t===TYPES.ISSUE) return true;
+  if(t===TYPES.OUTTX) return !!(ampo && getStitchingReceivedPoSet().has(ampo));
+  return false;
+}
+function isOutgoingTransferType(type){
+  return (type||'').toLowerCase()===TYPES.OUTTX;
+}
+// use this instead of isOutgoingTransferType() in every tab except Movement/Transfer
+function isTraceableOutgoingTransfer(e, receivedPoSet){
+  return isOutgoingTransferType(e.type) && e.ampo && receivedPoSet.has(e.ampo);
+}
+function isIncomingTransferType(type){
+  return (type||'').toLowerCase()===TYPES.INTX;
+}
+// "Other Washing → AM4" shown as its own visible column and added into Received —
+// only for POs traceable back to a "Received From Stitching" entry.
+// Use this instead of isIncomingTransferType() in every tab except Movement/Transfer.
+function isTraceableIncomingTransfer(e, receivedPoSet){
+  return isIncomingTransferType(e.type) && e.ampo && receivedPoSet.has(e.ampo);
+}
+const KNOWN_UNITS = ['4T2','AM11','AM12','AM14','AM15A','AM15X','AM4','AM4C','AM6','AM7','AMG','AT1','AT2','PQ-GU'];
+const KNOWN_BRANDS = ['ART CLASS',"Big Star Men's",'BR','BUTLER MENS','BUTLER WOMENS','EB DENIM','FABLETICS',
+  'GAP ADULT-MEN','GAP ADULT-WOMEN','GAP-ON-WOMEN','GAP KBM',"LAND'S END","Levi's",'MANGO','MOSSIMO',
+  'ON-GIRLS','ON-MEN','ON-TDG','STRADIVARIUS','WILD FABLE','ZARA BASIC','ZARA-MEN','ZW',"BSMEN'S",'AQUA'];
+
+let entries = [];
+
+function uid(){ return 'e'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+
+const MONTH_MAP = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+function normalizeDate(raw){
+  if(!raw) return '';
+  const s = String(raw).trim();
+  if(!s) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // already ISO, e.g. 2026-07-24
+
+  // DD-MMM-YY or DD-MMM-YYYY, e.g. 24-Jul-26, 24-Jul-2026, 24 Jul 26
+  let m = s.match(/^(\d{1,2})[-\/\s]([A-Za-z]{3,})[-\/\s](\d{2,4})$/);
+  if(m){
+    const day = m[1].padStart(2,'0');
+    const mon = MONTH_MAP[m[2].slice(0,3).toLowerCase()];
+    if(mon){
+      let year = m[3];
+      if(year.length===2) year = (parseInt(year,10) < 50 ? '20' : '19') + year;
+      return `${year}-${mon}-${day}`;
+    }
+  }
+
+  // MMM-DD-YY / MMM-DD-YYYY e.g. Jul-24-26
+  m = s.match(/^([A-Za-z]{3,})[-\/\s](\d{1,2})[-\/\s](\d{2,4})$/);
+  if(m){
+    const mon = MONTH_MAP[m[1].slice(0,3).toLowerCase()];
+    if(mon){
+      const day = m[2].padStart(2,'0');
+      let year = m[3];
+      if(year.length===2) year = (parseInt(year,10) < 50 ? '20' : '19') + year;
+      return `${year}-${mon}-${day}`;
+    }
+  }
+
+  // DD/MM/YYYY or DD-MM-YYYY (numeric, day-month-year assumed)
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+  if(m){
+    const day = m[1].padStart(2,'0'), mon = m[2].padStart(2,'0');
+    let year = m[3];
+    if(year.length===2) year = (parseInt(year,10) < 50 ? '20' : '19') + year;
+    return `${year}-${mon}-${day}`;
+  }
+
+  // last resort — let the browser try
+  const d = new Date(s);
+  if(!isNaN(d.getTime())){
+    return d.toISOString().slice(0,10);
+  }
+  return s; // couldn't parse — leave as-is rather than losing the data
+}
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function showToast(msg){
+  let t = document.getElementById('toast-msg');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'toast-msg';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(()=>{ t.style.display = 'none'; }, 6000);
+}
+function fmt(n){
+  const r = Math.round(n*100)/100;
+  return r.toLocaleString('en-US',{maximumFractionDigits:2});
+}
+function cellClass(n){ if(n>0) return 'pos'; if(n<0) return 'neg'; return 'zero'; }
+
+function loadEntries(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    entries = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    console.error('load failed:', e);
+    entries = [];
+  }
+  let fixed = 0;
+  entries.forEach(e=>{
+    if(e.date){
+      const norm = normalizeDate(e.date);
+      if(norm !== e.date){ e.date = norm; fixed++; }
+    }
+    if(e.type){
+      const normT = normalizeTypeValue(e.type);
+      if(normT !== e.type){ e.type = normT; fixed++; }
+    }
+    if(e.sendFrom){
+      const normF = normalizeUnitValue(e.sendFrom);
+      if(normF !== e.sendFrom){ e.sendFrom = normF; fixed++; }
+    }
+    if(e.sendTo){
+      const normTo = normalizeUnitValue(e.sendTo);
+      if(normTo !== e.sendTo){ e.sendTo = normTo; fixed++; }
+    }
+  });
+  if(fixed > 0){
+    persist();
+    showToast(fixed + ' entries mein type/unit/date format sahi kar diya gaya.');
+  }
+  renderAll();
+}
+function persist(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  }catch(e){
+    console.error('save failed:', e);
+    showToast('Save nahi ho saka: ' + (e && e.message ? e.message : e));
+  }
+}
+
+async function addEntryRemote(entry){
+  entries.push(entry);
+  persist();
+  renderAll();
+}
+async function deleteEntryRemote(id){
+  entries = entries.filter(e=>e.id!==id);
+  persist();
+  renderAll();
+}
+async function clearAllRemote(){
+  entries = [];
+  persist();
+  renderAll();
+}
+async function bulkAddRemote(newEntries){
+  entries.push(...newEntries);
+  persist();
+  renderAll();
+}
+
+function uniqueSorted(arr){ return [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b)); }
+
+function refreshDatalists(){
+  const units = uniqueSorted([...KNOWN_UNITS, ...entries.map(e=>e.sendFrom), ...entries.map(e=>e.sendTo)]);
+  const brands = uniqueSorted([...KNOWN_BRANDS, ...entries.map(e=>e.brand)]);
+  const ampos = uniqueSorted(entries.map(e=>e.ampo));
+  const items = uniqueSorted(entries.map(e=>e.itemDesc));
+
+  document.getElementById('units-list').innerHTML = units.map(u=>`<option value="${u}">`).join('');
+  document.getElementById('brands-list').innerHTML = brands.map(b=>`<option value="${b}">`).join('');
+  document.getElementById('ampo-list').innerHTML = ampos.map(p=>`<option value="${p}">`).join('');
+  document.getElementById('items-list').innerHTML = items.map(p=>`<option value="${p}">`).join('');
+
+  const sel = document.getElementById('unit-brand-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all brand">All Brand</option>' + brands.map(b=>`<option value="${b}">${b}</option>`).join('');
+  sel.value = brands.includes(cur) ? cur : 'all brand';
+
+  const lkBrand = document.getElementById('lk-brand');
+  const curLk = lkBrand.value;
+  lkBrand.innerHTML = '<option value="">— select brand —</option>' + brands.map(b=>`<option value="${b}">${b}</option>`).join('');
+  lkBrand.value = brands.includes(curLk) ? curLk : '';
+
+  return {units, brands, items};
+}
+
+/* unique styles for a given brand = UNIQUE(FILTER(ITEM_DESCRIPTION, BRAND=brand)) */
+function stylesForBrand(brand){
+  return uniqueSorted(entries.filter(e=>(e.brand||'')===brand).map(e=>e.itemDesc));
+}
+
+function refreshStyleDropdown(){
+  const brand = document.getElementById('lk-brand').value;
+  const styleSel = document.getElementById('lk-style');
+  if(!brand){
+    styleSel.innerHTML = '<option value="">— select brand first —</option>';
+    styleSel.disabled = true;
+    document.getElementById('style-lookup-result').innerHTML = '';
+    return;
+  }
+  const styles = stylesForBrand(brand);
+  styleSel.disabled = false;
+  styleSel.innerHTML = styles.length
+    ? '<option value="">— select style —</option>' + styles.map(s=>`<option value="${s}">${s}</option>`).join('')
+    : '<option value="">No styles found for this brand yet</option>';
+  document.getElementById('style-lookup-result').innerHTML = '';
+}
+
+function renderStyleLookup(){
+  const brand = document.getElementById('lk-brand').value;
+  const style = document.getElementById('lk-style').value;
+  const box = document.getElementById('style-lookup-result');
+  if(!brand || !style){ box.innerHTML=''; return; }
+  const match = e => (e.brand||'')===brand && (e.itemDesc||'')===style;
+  const receivedPoSet = getStitchingReceivedPoSet();
+  const recv = sumWhere(e=>match(e) && isReceivedType(e.type));
+  const intx = sumWhere(e=>match(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+  const ret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.RET);
+  const tr = (recv+intx)-ret;
+  const iss = sumWhere(e=>match(e) && isIssuedType(e.type, e.ampo));
+  const finret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.FINRET);
+  const wip = (iss-finret)-tr;
+
+  const pos = uniqueSorted(entries.filter(match).map(e=>e.ampo));
+  let poRowsHtml = '';
+  if(pos.length){
+    let tot = {recv:0,ret:0,tr:0,iss:0,finret:0,wip:0};
+    poRowsHtml = pos.map(po=>{
+      const pm = e => match(e) && (e.ampo||'')===po;
+      const pRecv = sumWhere(e=>pm(e) && isReceivedType(e.type));
+      const pIntx = sumWhere(e=>pm(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+      const pRet = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.RET);
+      const pTr = (pRecv+pIntx)-pRet;
+      const pIss = sumWhere(e=>pm(e) && isIssuedType(e.type, e.ampo));
+      const pFinret = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.FINRET);
+      const pWip = (pIss-pFinret)-pTr;
+      const poUnits = uniqueSorted(entries.filter(pm).flatMap(e=>[e.sendFrom, e.sendTo]));
+      tot.recv+=pRecv; tot.ret+=pRet; tot.tr+=pTr; tot.iss+=pIss; tot.finret+=pFinret; tot.wip+=pWip;
+      return `<tr>
+        <td class="name">${po||'(blank)'}</td>
+        <td class="name">${poUnits.join(', ')||'—'}</td>
+        <td>${fmt(pRecv)}</td><td>${fmt(pRet)}</td><td>${fmt(pTr)}</td>
+        <td>${fmt(pIss)}</td><td>${fmt(pFinret)}</td>
+        <td class="${cellClass(pWip)}">${fmt(pWip)}</td>
+      </tr>`;
+    }).join('') + `<tr class="total"><td class="name">Total (${pos.length} PO${pos.length>1?'s':''})</td><td class="name"></td>
+      <td>${fmt(tot.recv)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.tr)}</td>
+      <td>${fmt(tot.iss)}</td><td>${fmt(tot.finret)}</td><td class="${cellClass(tot.wip)}">${fmt(tot.wip)}</td></tr>`;
+  } else {
+    poRowsHtml = `<tr><td colspan="8" class="empty-note">Is style ke against koi AM PO number entries mein darj nahi hai.</td></tr>`;
+  }
+
+  box.innerHTML = `<div class="lookup-grid">
+    <div class="box"><div class="l">Received</div><div class="v">${fmt(recv)}</div></div>
+    <div class="box"><div class="l">Returned</div><div class="v">${fmt(ret)}</div></div>
+    <div class="box"><div class="l">Ttl Received</div><div class="v">${fmt(tr)}</div></div>
+    <div class="box"><div class="l">Issued</div><div class="v">${fmt(iss)}</div></div>
+    <div class="box"><div class="l">Ret from Finishing</div><div class="v">${fmt(finret)}</div></div>
+    <div class="box"><div class="l">WIP</div><div class="v ${cellClass(wip)}">${fmt(wip)}</div></div>
+  </div>
+  <div class="tablewrap" style="margin-top:14px;">
+    <table>
+      <thead><tr>
+        <th class="name">PO No.</th><th class="name">Units</th><th>Received</th><th>Returned</th><th>Ttl Received</th>
+        <th>Issued</th><th>Ret from Finishing</th><th>WIP</th>
+      </tr></thead>
+      <tbody>${poRowsHtml}</tbody>
+    </table>
+  </div>`;
+}
+
+/* ---------- entry table ---------- */
+function renderEntries(){
+  const body = document.getElementById('entries-body');
+  document.getElementById('entry-count').textContent = entries.length + ' rows';
+  if(entries.length===0){
+    body.innerHTML = `<tr><td colspan="9" class="empty-note">No entries yet — add a gate-pass row above, or import a CSV.</td></tr>`;
+    return;
+  }
+  const rows = entries.slice().reverse().slice(0,300);
+  body.innerHTML = rows.map(e=>`
+    <tr>
+      <td class="name">${e.type}</td>
+      <td class="name">${e.date||''}</td>
+      <td class="name">${e.sendFrom||''}</td>
+      <td class="name">${e.sendTo||''}</td>
+      <td class="name">${e.brand||''}</td>
+      <td class="name">${e.ampo||''}</td>
+      <td class="name">${e.itemDesc||''}</td>
+      <td>${fmt(e.qty)}</td>
+      <td><button class="del-btn" data-id="${e.id}" title="Delete">&times;</button></td>
+    </tr>`).join('');
+  body.querySelectorAll('.del-btn').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      try{ await deleteEntryRemote(b.dataset.id); }
+      catch(err){ console.error(err); showToast('Delete nahi ho saka — internet check karein.'); }
+    });
+  });
+}
+
+/* ---------- brand-wise compile report ---------- */
+function sumWhere(pred){
+  return entries.filter(pred).reduce((s,e)=>s+num(e.qty),0);
+}
+
+function renderBrand(){
+  const {brands} = refreshDatalists();
+  const body = document.getElementById('brand-body');
+  if(brands.length===0 || entries.length===0){
+    body.innerHTML = `<tr><td colspan="10" class="empty-note">Add entries first — this table fills in automatically.</td></tr>`;
+    document.getElementById('brand-kpis').innerHTML='';
+    return;
+  }
+  const receivedPoSet = getStitchingReceivedPoSet();
+  let tot = {recv:0,intx:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,ti:0,wip:0};
+  const rowsHtml = brands.map(brand=>{
+    const isMatch = e => (e.brand||'')===brand;
+    const recv = sumWhere(e=>isMatch(e) && isReceivedType(e.type));
+    const intx = sumWhere(e=>isMatch(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+    const ret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.RET);
+    const tr = (recv+intx)-ret;
+    const issFin = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.ISSUE);
+    const outtx = sumWhere(e=>isMatch(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
+    const finret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.FINRET);
+    const ti = (issFin+outtx)-finret;
+    const wip = ti-tr;
+    if(recv===0 && intx===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
+    tot.recv+=recv; tot.intx+=intx; tot.ret+=ret; tot.tr+=tr; tot.issFin+=issFin; tot.outtx+=outtx; tot.finret+=finret; tot.ti+=ti; tot.wip+=wip;
+    return `<tr>
+      <td class="name">${brand}</td>
+      <td>${fmt(recv)}</td><td>${fmt(intx)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td><td>${fmt(ti)}</td>
+      <td class="${cellClass(wip)}">${fmt(wip)}</td>
+    </tr>`;
+  }).filter(Boolean);
+
+  body.innerHTML = (rowsHtml.length? rowsHtml.join('') : `<tr><td colspan="10" class="empty-note">No matching data yet.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(tot.recv)}</td><td>${fmt(tot.intx)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.tr)}</td>
+       <td>${fmt(tot.issFin)}</td><td>${fmt(tot.outtx)}</td><td>${fmt(tot.finret)}</td><td>${fmt(tot.ti)}</td><td class="${cellClass(tot.wip)}">${fmt(tot.wip)}</td></tr>`;
+
+  document.getElementById('brand-kpis').innerHTML = `
+    <div class="kpi"><div class="label">Total Received</div><div class="val">${fmt(tot.tr)}</div></div>
+    <div class="kpi"><div class="label">Total Issued</div><div class="val">${fmt(tot.ti)}</div></div>
+    <div class="kpi"><div class="label">Total W.I.P</div><div class="val ${cellClass(tot.wip)}">${fmt(tot.wip)}</div></div>
+  `;
+}
+
+/* ---------- unit-wise compile report ---------- */
+function renderUnit(){
+  const {units} = refreshDatalists();
+  const body = document.getElementById('unit-body');
+  const brandFilter = document.getElementById('unit-brand-filter').value;
+  if(entries.length===0){
+    body.innerHTML = `<tr><td colspan="9" class="empty-note">Add entries first — this table fills in automatically.</td></tr>`;
+    return;
+  }
+  const brandOk = e => brandFilter==='all brand' || (e.brand||'')===brandFilter;
+  const receivedPoSet = getStitchingReceivedPoSet();
+  let tot = {recv:0,intx:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,wip:0};
+  const rowsHtml = units.map(unit=>{
+    const recv = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && isReceivedType(e.type));
+    const intx = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && isTraceableIncomingTransfer(e, receivedPoSet));
+    const ret = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.RET);
+    const tr = (recv+intx)-ret;
+    const issFin = sumWhere(e=>brandOk(e) && (e.sendTo||'')===unit && e.type.toLowerCase()===TYPES.ISSUE);
+    const outtx = sumWhere(e=>brandOk(e) && (e.sendTo||'')===unit && isTraceableOutgoingTransfer(e, receivedPoSet));
+    const finret = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.FINRET);
+    const wip = ((issFin+outtx)-finret)-tr;
+    if(recv===0 && intx===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
+    tot.recv+=recv; tot.intx+=intx; tot.ret+=ret; tot.tr+=tr; tot.issFin+=issFin; tot.outtx+=outtx; tot.finret+=finret; tot.wip+=wip;
+    return `<tr>
+      <td class="name">${unit}</td>
+      <td>${fmt(recv)}</td><td>${fmt(intx)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td>
+      <td class="${cellClass(wip)}">${fmt(wip)}</td>
+    </tr>`;
+  }).filter(Boolean);
+
+  body.innerHTML = (rowsHtml.length? rowsHtml.join('') : `<tr><td colspan="9" class="empty-note">No matching data yet.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(tot.recv)}</td><td>${fmt(tot.intx)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.tr)}</td>
+       <td>${fmt(tot.issFin)}</td><td>${fmt(tot.outtx)}</td><td>${fmt(tot.finret)}</td><td class="${cellClass(tot.wip)}">${fmt(tot.wip)}</td></tr>`;
+}
+
+/* ---------- unit -> brand breakdown ---------- */
+let unitBrandChart = null;
+function renderUnitBrandBreakdown(){
+  const {units, brands} = refreshDatalists();
+  const body = document.getElementById('unit-brand-body');
+  if(entries.length===0){
+    body.innerHTML = `<tr><td colspan="4" class="empty-note">Add entries first.</td></tr>`;
+    return;
+  }
+  const rows = [];
+  let totRecv=0, totIss=0;
+  const receivedPoSet = getStitchingReceivedPoSet();
+  units.forEach(unit=>{
+    brands.forEach(brand=>{
+      const recv = sumWhere(e=>(e.sendFrom||'')===unit && (e.brand||'')===brand && isReceivedType(e.type))
+        + sumWhere(e=>(e.sendFrom||'')===unit && (e.brand||'')===brand && isTraceableIncomingTransfer(e, receivedPoSet));
+      const iss = sumWhere(e=>(e.sendTo||'')===unit && (e.brand||'')===brand && isIssuedType(e.type, e.ampo));
+      if(recv===0 && iss===0) return;
+      totRecv+=recv; totIss+=iss;
+      rows.push({unit, brand, recv, iss});
+    });
+  });
+  rows.sort((a,b)=> a.unit.localeCompare(b.unit) || a.brand.localeCompare(b.brand));
+
+  body.innerHTML = (rows.length
+    ? rows.map(r=>`<tr><td class="name">${r.unit}</td><td class="name">${r.brand}</td><td>${fmt(r.recv)}</td><td>${fmt(r.iss)}</td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty-note">No matching data yet.</td></tr>`)
+    + `<tr class="total"><td class="name" colspan="2">Total</td><td>${fmt(totRecv)}</td><td>${fmt(totIss)}</td></tr>`;
+
+  // chart — top 12 unit+brand combos by volume
+  if(typeof Chart === 'undefined') return;
+  const ctx = document.getElementById('chart-unit-brand');
+  if(!ctx || ctx.offsetParent === null) return;
+  const top = rows.slice().sort((a,b)=>(b.recv+b.iss)-(a.recv+a.iss)).slice(0,12);
+  try{
+    if(unitBrandChart) unitBrandChart.destroy();
+    if(top.length){
+      unitBrandChart = new Chart(ctx, {
+        type:'bar',
+        data:{
+          labels: top.map(r=>r.unit+' — '+r.brand),
+          datasets:[
+            {label:'Received', data:top.map(r=>r.recv), backgroundColor:'#3762e0'},
+            {label:'Issued', data:top.map(r=>r.iss), backgroundColor:'#12996b'}
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ position:'top', labels:{ font:{family:"IBM Plex Sans"}, color:'#1a2233' } } },
+          scales:{
+            x:{ ticks:{ font:{family:"IBM Plex Mono", size:9.5}, color:'#5c6b81', maxRotation:60, minRotation:30 }, grid:{ display:false } },
+            y:{ ticks:{ font:{family:"IBM Plex Mono", size:10.5}, color:'#5c6b81' }, grid:{ color:'rgba(26,34,51,0.06)' } }
+          }
+        }
+      });
+    }
+  }catch(err){ console.error('Unit-brand chart failed:', err); }
+}
+
+/* ---------- daily WIP (date-filtered) ---------- */
+function renderDailyWip(){
+  const dateInput = document.getElementById('daily-date');
+  const selectedDate = dateInput.value;
+  const brandBody = document.getElementById('daily-brand-body');
+  const unitBody = document.getElementById('daily-unit-body');
+  const notice = document.getElementById('daily-nodate-notice');
+
+  const noDateCount = entries.filter(e=>!e.date).length;
+  if(noDateCount > 0){
+    notice.style.display = 'block';
+    notice.textContent = noDateCount + ' entries mein Date khali hai — wo is report mein shamil nahi hongi. Naya entry add karte waqt ab Date bharna zaroori kar diya gaya hai.';
+  } else {
+    notice.style.display = 'none';
+  }
+
+  if(!selectedDate){
+    brandBody.innerHTML = `<tr><td colspan="8" class="empty-note">Date select karein.</td></tr>`;
+    unitBody.innerHTML = `<tr><td colspan="7" class="empty-note">Date select karein.</td></tr>`;
+    return;
+  }
+
+  const dayOk = e => (e.date||'')===selectedDate;
+  const {brands, units} = refreshDatalists();
+  const receivedPoSet = getStitchingReceivedPoSet();
+
+  // brand-wise for the day
+  let bTot = {recv:0,ret:0,tr:0,iss:0,finret:0,ti:0,wip:0};
+  const brandRows = brands.map(brand=>{
+    const isMatch = e => dayOk(e) && (e.brand||'')===brand;
+    const recv = sumWhere(e=>isMatch(e) && isReceivedType(e.type)) + sumWhere(e=>isMatch(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+    const ret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.RET);
+    const tr = recv-ret;
+    const iss = sumWhere(e=>isMatch(e) && isIssuedType(e.type, e.ampo));
+    const finret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.FINRET);
+    const ti = iss-finret;
+    const wip = ti-tr;
+    if(recv===0 && ret===0 && iss===0 && finret===0) return null;
+    bTot.recv+=recv; bTot.ret+=ret; bTot.tr+=tr; bTot.iss+=iss; bTot.finret+=finret; bTot.ti+=ti; bTot.wip+=wip;
+    return `<tr>
+      <td class="name">${brand}</td>
+      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(iss)}</td><td>${fmt(finret)}</td><td>${fmt(ti)}</td>
+      <td class="${cellClass(wip)}">${fmt(wip)}</td>
+    </tr>`;
+  }).filter(Boolean);
+  brandBody.innerHTML = (brandRows.length? brandRows.join('') : `<tr><td colspan="8" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(bTot.recv)}</td><td>${fmt(bTot.ret)}</td><td>${fmt(bTot.tr)}</td>
+       <td>${fmt(bTot.iss)}</td><td>${fmt(bTot.finret)}</td><td>${fmt(bTot.ti)}</td><td class="${cellClass(bTot.wip)}">${fmt(bTot.wip)}</td></tr>`;
+
+  // unit-wise for the day
+  let uTot = {recv:0,ret:0,tr:0,iss:0,finret:0,wip:0};
+  const unitRows = units.map(unit=>{
+    const recv = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && isReceivedType(e.type)) + sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && isTraceableIncomingTransfer(e, receivedPoSet));
+    const ret = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.RET);
+    const tr = recv-ret;
+    const iss = sumWhere(e=>dayOk(e) && (e.sendTo||'')===unit && isIssuedType(e.type, e.ampo));
+    const finret = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.FINRET);
+    const wip = (iss-finret)-tr;
+    if(recv===0 && ret===0 && iss===0 && finret===0) return null;
+    uTot.recv+=recv; uTot.ret+=ret; uTot.tr+=tr; uTot.iss+=iss; uTot.finret+=finret; uTot.wip+=wip;
+    return `<tr>
+      <td class="name">${unit}</td>
+      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(iss)}</td><td>${fmt(finret)}</td>
+      <td class="${cellClass(wip)}">${fmt(wip)}</td>
+    </tr>`;
+  }).filter(Boolean);
+  unitBody.innerHTML = (unitRows.length? unitRows.join('') : `<tr><td colspan="7" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(uTot.recv)}</td><td>${fmt(uTot.ret)}</td><td>${fmt(uTot.tr)}</td>
+       <td>${fmt(uTot.iss)}</td><td>${fmt(uTot.finret)}</td><td class="${cellClass(uTot.wip)}">${fmt(uTot.wip)}</td></tr>`;
+}
+
+/* ---------- monthly WIP (opening + this month's activity = closing) ---------- */
+function wipAsOf(matchFn){
+  // cumulative WIP for whatever subset matchFn selects, using the same formula as everywhere else
+  const receivedPoSet = getStitchingReceivedPoSet();
+  const recv = sumWhere(e=>matchFn(e) && isReceivedType(e.type)) + sumWhere(e=>matchFn(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+  const ret = sumWhere(e=>matchFn(e) && e.type.toLowerCase()===TYPES.RET);
+  const tr = recv-ret;
+  const iss = sumWhere(e=>matchFn(e) && isIssuedType(e.type, e.ampo));
+  const finret = sumWhere(e=>matchFn(e) && e.type.toLowerCase()===TYPES.FINRET);
+  const ti = iss-finret;
+  return { recv, ret, tr, iss, finret, ti, wip: ti-tr };
+}
+function wipAsOfUnit(unit, extraFilter){
+  // same as wipAsOf, but unit-wise fields use sendFrom for Received/Returned/FinReturn and sendTo for Issued
+  const receivedPoSet = getStitchingReceivedPoSet();
+  const recv = sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && isReceivedType(e.type)) + sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && isTraceableIncomingTransfer(e, receivedPoSet));
+  const ret = sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.RET);
+  const tr = recv-ret;
+  const iss = sumWhere(e=>extraFilter(e) && (e.sendTo||'')===unit && isIssuedType(e.type, e.ampo));
+  const finret = sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.FINRET);
+  const ti = iss-finret;
+  return { recv, ret, tr, iss, finret, ti, wip: ti-tr };
+}
+
+function renderMonthlyWip(){
+  const monthInput = document.getElementById('monthly-month');
+  const selectedMonth = monthInput.value; // format: YYYY-MM
+  const brandBody = document.getElementById('monthly-brand-body');
+  const unitBody = document.getElementById('monthly-unit-body');
+  const notice = document.getElementById('monthly-nodate-notice');
+
+  const noDateCount = entries.filter(e=>!e.date).length;
+  if(noDateCount > 0){
+    notice.style.display = 'block';
+    notice.textContent = noDateCount + ' entries mein Date khali hai — wo Opening WIP aur is report dono mein shamil nahi hongi.';
+  } else {
+    notice.style.display = 'none';
+  }
+
+  if(!selectedMonth){
+    brandBody.innerHTML = `<tr><td colspan="7" class="empty-note">Month select karein.</td></tr>`;
+    unitBody.innerHTML = `<tr><td colspan="7" class="empty-note">Month select karein.</td></tr>`;
+    return;
+  }
+
+  const [y, mo] = selectedMonth.split('-').map(Number);
+  const monthStart = selectedMonth + '-01';
+  const lastDay = new Date(y, mo, 0).getDate(); // day 0 of next month = last day of this month
+  const monthEnd = selectedMonth + '-' + String(lastDay).padStart(2,'0');
+
+  const beforeMonth = e => e.date && e.date < monthStart;
+  const inMonth = e => e.date && e.date >= monthStart && e.date <= monthEnd;
+
+  const {brands, units} = refreshDatalists();
+
+  // brand-wise
+  let bTot = {open:0, recv:0, ret:0, iss:0, finret:0, close:0};
+  const brandRows = brands.map(brand=>{
+    const opening = wipAsOf(e=>beforeMonth(e) && (e.brand||'')===brand);
+    const month = wipAsOf(e=>inMonth(e) && (e.brand||'')===brand);
+    const closing = opening.wip + (month.ti - month.tr);
+    if(opening.recv===0 && opening.ret===0 && opening.iss===0 && opening.finret===0 &&
+       month.recv===0 && month.ret===0 && month.iss===0 && month.finret===0) return null;
+    bTot.open+=opening.wip; bTot.recv+=month.tr; bTot.iss+=month.ti; bTot.close+=closing;
+    return `<tr>
+      <td class="name">${brand}</td>
+      <td class="${cellClass(opening.wip)}">${fmt(opening.wip)}</td>
+      <td>${fmt(month.tr)}</td><td>${fmt(month.ret)}</td>
+      <td>${fmt(month.iss)}</td><td>${fmt(month.finret)}</td>
+      <td class="${cellClass(closing)}">${fmt(closing)}</td>
+    </tr>`;
+  }).filter(Boolean);
+  brandBody.innerHTML = (brandRows.length? brandRows.join('') : `<tr><td colspan="7" class="empty-note">Is month ke liye koi entries nahi hain.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td class="${cellClass(bTot.open)}">${fmt(bTot.open)}</td><td>${fmt(bTot.recv)}</td><td></td>
+       <td>${fmt(bTot.iss)}</td><td></td><td class="${cellClass(bTot.close)}">${fmt(bTot.close)}</td></tr>`;
+
+  // unit-wise
+  let uTot = {open:0, close:0};
+  const unitRows = units.map(unit=>{
+    const opening = wipAsOfUnit(unit, beforeMonth);
+    const month = wipAsOfUnit(unit, inMonth);
+    const closing = opening.wip + (month.ti - month.tr);
+    if(opening.recv===0 && opening.ret===0 && opening.iss===0 && opening.finret===0 &&
+       month.recv===0 && month.ret===0 && month.iss===0 && month.finret===0) return null;
+    uTot.open+=opening.wip; uTot.close+=closing;
+    return `<tr>
+      <td class="name">${unit}</td>
+      <td class="${cellClass(opening.wip)}">${fmt(opening.wip)}</td>
+      <td>${fmt(month.tr)}</td><td>${fmt(month.ret)}</td>
+      <td>${fmt(month.iss)}</td><td>${fmt(month.finret)}</td>
+      <td class="${cellClass(closing)}">${fmt(closing)}</td>
+    </tr>`;
+  }).filter(Boolean);
+  unitBody.innerHTML = (unitRows.length? unitRows.join('') : `<tr><td colspan="7" class="empty-note">Is month ke liye koi entries nahi hain.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td class="${cellClass(uTot.open)}">${fmt(uTot.open)}</td><td></td><td></td>
+       <td></td><td></td><td class="${cellClass(uTot.close)}">${fmt(uTot.close)}</td></tr>`;
+}
+
+/* ---------- PO / style lookup ---------- */
+function doLookup(){
+  const po = document.getElementById('lk-ampo').value.trim();
+  const box = document.getElementById('lookup-result');
+  if(!po){ box.innerHTML = '<p class="empty-note">Enter or pick an AM PO / Style# above.</p>'; return; }
+  const match = e => (e.ampo||'')===po;
+  const receivedPoSet = getStitchingReceivedPoSet();
+  const recv = sumWhere(e=>match(e) && isReceivedType(e.type)) + sumWhere(e=>match(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+  const ret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.RET);
+  const tr = recv-ret;
+  const iss = sumWhere(e=>match(e) && isIssuedType(e.type, e.ampo));
+  const finret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.FINRET);
+  const wip = (iss-finret)-tr;
+  box.innerHTML = `<div class="lookup-grid">
+    <div class="box"><div class="l">Received</div><div class="v">${fmt(recv)}</div></div>
+    <div class="box"><div class="l">Returned</div><div class="v">${fmt(ret)}</div></div>
+    <div class="box"><div class="l">Ttl Received</div><div class="v">${fmt(tr)}</div></div>
+    <div class="box"><div class="l">Issued</div><div class="v">${fmt(iss)}</div></div>
+    <div class="box"><div class="l">Ret from Finishing</div><div class="v">${fmt(finret)}</div></div>
+    <div class="box"><div class="l">WIP</div><div class="v ${cellClass(wip)}">${fmt(wip)}</div></div>
+  </div>`;
+}
+
+/* ---------- transfer tab (unit groups, brand-wise inside, with subtotals + chart) ---------- */
+let transferUnitChart = null;
+function renderTransfer(){
+  const body = document.getElementById('transfer-body');
+  if(entries.length===0){
+    body.innerHTML = `<tr><td colspan="4" class="empty-note">No data yet.</td></tr>`;
+    document.getElementById('transfer-kpis').innerHTML = '';
+    return;
+  }
+  const transferEntries = entries.filter(e=>{
+    const t = e.type.toLowerCase();
+    return t===TYPES.OUTTX || t===TYPES.INTX;
+  });
+  if(transferEntries.length===0){
+    body.innerHTML = `<tr><td colspan="4" class="empty-note">Abhi tak koi AM4 &#8596; Other Washing transfer entry nahi hai.</td></tr>`;
+    document.getElementById('transfer-kpis').innerHTML = '';
+    return;
+  }
+
+  // build unique (unit, brand) pairs — unit = the "other" washing unit on either side
+  const pairKey = (unit, brand) => unit+'|||'+brand;
+  const pairs = new Map();
+  transferEntries.forEach(e=>{
+    const t = e.type.toLowerCase();
+    const unit = t===TYPES.OUTTX ? (e.sendTo||'') : (e.sendFrom||'');
+    const brand = e.brand||'';
+    pairs.set(pairKey(unit,brand), {unit, brand});
+  });
+
+  const rows = [...pairs.values()].map(({unit,brand})=>{
+    const received = sumWhere(e=>e.type.toLowerCase()===TYPES.INTX && (e.brand||'')===brand && (e.sendFrom||'')===unit);
+    const sent = sumWhere(e=>e.type.toLowerCase()===TYPES.OUTTX && (e.brand||'')===brand && (e.sendTo||'')===unit);
+    if(received===0 && sent===0) return null;
+    const wip = sent-received;
+    return {unit, brand, received, sent, wip};
+  }).filter(Boolean);
+
+  rows.sort((a,b)=> a.unit.localeCompare(b.unit) || a.brand.localeCompare(b.brand));
+
+  // group by unit, with a subtotal row after each unit's brands
+  let totIn=0, totOut=0;
+  let html = '';
+  const units = uniqueSorted(rows.map(r=>r.unit));
+  const unitChartData = [];
+  units.forEach(unit=>{
+    const unitRows = rows.filter(r=>r.unit===unit);
+    let uIn=0, uOut=0;
+    html += `<tr class="group-header"><td colspan="4">Unit: ${unit}</td></tr>`;
+    unitRows.forEach(r=>{
+      uIn+=r.received; uOut+=r.sent;
+      html += `<tr>
+        <td class="name">${r.brand||'—'}</td>
+        <td>${fmt(r.received)}</td>
+        <td>${fmt(r.sent)}</td>
+        <td class="${cellClass(r.wip)}">${fmt(r.wip)}</td>
+      </tr>`;
+    });
+    html += `<tr class="subtotal"><td class="name">Subtotal — ${unit}</td><td>${fmt(uIn)}</td><td>${fmt(uOut)}</td><td class="${cellClass(uOut-uIn)}">${fmt(uOut-uIn)}</td></tr>`;
+    totIn+=uIn; totOut+=uOut;
+    unitChartData.push({unit, received:uIn, sent:uOut});
+  });
+
+  body.innerHTML = html + `<tr class="total"><td class="name">Grand Total</td><td>${fmt(totIn)}</td><td>${fmt(totOut)}</td><td class="${cellClass(totOut-totIn)}">${fmt(totOut-totIn)}</td></tr>`;
+
+  document.getElementById('transfer-kpis').innerHTML = `
+    <div class="kpi"><div class="label">Total Received (In)</div><div class="val">${fmt(totIn)}</div></div>
+    <div class="kpi"><div class="label">Total Issued (Out)</div><div class="val">${fmt(totOut)}</div></div>
+    <div class="kpi"><div class="label">Net WIP Outstanding</div><div class="val ${cellClass(totOut-totIn)}">${fmt(totOut-totIn)}</div></div>
+  `;
+
+  // unit-wise chart
+  if(typeof Chart === 'undefined') return;
+  const ctx = document.getElementById('chart-transfer-unit');
+  if(!ctx || ctx.offsetParent === null) return;
+  try{
+    if(transferUnitChart) transferUnitChart.destroy();
+    if(unitChartData.length){
+      transferUnitChart = new Chart(ctx, {
+        type:'bar',
+        data:{
+          labels: unitChartData.map(r=>r.unit),
+          datasets:[
+            {label:'Received (Other → AM4)', data:unitChartData.map(r=>r.received), backgroundColor:'#12996b'},
+            {label:'Issued (AM4 → Other)', data:unitChartData.map(r=>r.sent), backgroundColor:'#dc4b3f'}
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ position:'top', labels:{ font:{family:"IBM Plex Sans"}, color:'#1a2233' } } },
+          scales:{
+            x:{ ticks:{ font:{family:"IBM Plex Mono", size:10.5}, color:'#5c6b81' }, grid:{ display:false } },
+            y:{ ticks:{ font:{family:"IBM Plex Mono", size:10.5}, color:'#5c6b81' }, grid:{ color:'rgba(26,34,51,0.06)' } }
+          }
+        }
+      });
+    }
+  }catch(err){ console.error('Transfer unit chart failed:', err); }
+}
+
+/* ---------- flow diagram ---------- */
+function renderFlowDiagram(){
+  const receivedPoSet = getStitchingReceivedPoSet();
+  const recv = sumWhere(e=>isReceivedType(e.type));
+  const intx = sumWhere(e=>isTraceableIncomingTransfer(e, receivedPoSet));
+  const ret = sumWhere(e=>e.type.toLowerCase()===TYPES.RET);
+  const tr = (recv+intx)-ret;
+  const iss = sumWhere(e=>isIssuedType(e.type, e.ampo));
+  const finret = sumWhere(e=>e.type.toLowerCase()===TYPES.FINRET);
+  const ti = iss-finret;
+  const wip = ti-tr;
+  const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = fmt(val); };
+  set('flow-recv', recv+intx);
+  set('flow-ret', ret);
+  set('flow-iss', iss);
+  set('flow-finret', finret);
+  set('flow-tr', tr);
+  set('flow-ti', ti);
+  set('flow-wip', wip);
+}
+
+/* ---------- bar charts (Chart.js) ---------- */
+let brandChart = null, unitChart = null;
+function buildBrandUnitSeries(kind){
+  // kind: 'brand' or 'unit'
+  const {brands, units} = refreshDatalists();
+  const keys = kind==='brand' ? brands : units;
+  const receivedPoSet = getStitchingReceivedPoSet();
+  const rows = keys.map(k=>{
+    let recv, ret, iss, finret;
+    if(kind==='brand'){
+      const m = e => (e.brand||'')===k;
+      recv = sumWhere(e=>m(e) && isReceivedType(e.type)) + sumWhere(e=>m(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+      ret = sumWhere(e=>m(e) && e.type.toLowerCase()===TYPES.RET);
+      iss = sumWhere(e=>m(e) && isIssuedType(e.type, e.ampo));
+      finret = sumWhere(e=>m(e) && e.type.toLowerCase()===TYPES.FINRET);
+    } else {
+      recv = sumWhere(e=>(e.sendFrom||'')===k && isReceivedType(e.type)) + sumWhere(e=>(e.sendFrom||'')===k && isTraceableIncomingTransfer(e, receivedPoSet));
+      ret = sumWhere(e=>(e.sendFrom||'')===k && e.type.toLowerCase()===TYPES.RET);
+      iss = sumWhere(e=>(e.sendTo||'')===k && isIssuedType(e.type, e.ampo));
+      finret = sumWhere(e=>(e.sendFrom||'')===k && e.type.toLowerCase()===TYPES.FINRET);
+    }
+    const tr = recv-ret;
+    const ti = iss-finret;
+    const wip = ti-tr;
+    return {key:k, tr, ti, wip, vol: Math.abs(tr)+Math.abs(ti)+Math.abs(wip)};
+  }).filter(r=>r.vol>0);
+  rows.sort((a,b)=>b.vol-a.vol);
+  return rows.slice(0,12);
+}
+
+function renderCharts(){
+  if(typeof Chart === 'undefined') return;
+  const brandCtx = document.getElementById('chart-brand');
+  const unitCtx = document.getElementById('chart-unit');
+  if(!brandCtx || !unitCtx) return;
+  if(brandCtx.offsetParent === null) return; // panel not visible yet — skip until tab switch triggers this again
+
+  const brandRows = buildBrandUnitSeries('brand');
+  const unitRows = buildBrandUnitSeries('unit');
+
+  const commonOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ position:'top', labels:{ font:{family:"IBM Plex Sans"}, color:'#1b2733' } } },
+    scales:{
+      x:{ ticks:{ font:{family:"IBM Plex Mono", size:10.5}, color:'#5a6b7a' }, grid:{ display:false } },
+      y:{ ticks:{ font:{family:"IBM Plex Mono", size:10.5}, color:'#5a6b7a' }, grid:{ color:'rgba(27,39,51,0.06)' } }
+    }
+  };
+
+  try{
+    if(brandChart) brandChart.destroy();
+    if(brandRows.length){
+      brandChart = new Chart(brandCtx, {
+        type:'bar',
+        data:{
+          labels: brandRows.map(r=>r.key),
+          datasets:[
+            {label:'Ttl Received', data:brandRows.map(r=>r.tr), backgroundColor:'#2f6fed'},
+            {label:'Ttl Issued', data:brandRows.map(r=>r.ti), backgroundColor:'#7c5cf0'},
+            {label:'WIP', data:brandRows.map(r=>r.wip), backgroundColor:'#e0473a'}
+          ]
+        },
+        options: commonOpts
+      });
+    }
+  }catch(err){ console.error('Brand chart failed:', err); }
+
+  try{
+    if(unitChart) unitChart.destroy();
+    if(unitRows.length){
+      unitChart = new Chart(unitCtx, {
+        type:'bar',
+        data:{
+          labels: unitRows.map(r=>r.key),
+          datasets:[
+            {label:'Received', data:unitRows.map(r=>r.tr), backgroundColor:'#14a973'},
+            {label:'Issued', data:unitRows.map(r=>r.ti), backgroundColor:'#c98a1a'},
+            {label:'WIP', data:unitRows.map(r=>r.wip), backgroundColor:'#e0473a'}
+          ]
+        },
+        options: commonOpts
+      });
+    }
+  }catch(err){ console.error('Unit chart failed:', err); }
+}
+
+function renderAll(){
+  renderEntries();
+  renderBrand();
+  renderUnit();
+  renderUnitBrandBreakdown();
+  renderDailyWip();
+  renderMonthlyWip();
+  renderTransfer();
+  renderFlowDiagram();
+  renderCharts();
+}
+
+/* ---------- events ---------- */
+document.getElementById('tabs').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button[data-tab]');
+  if(!btn) return;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  if(btn.dataset.tab==='flow'){
+    setTimeout(renderCharts, 30);
+  }
+  if(btn.dataset.tab==='unit'){
+    setTimeout(renderUnitBrandBreakdown, 30);
+  }
+  if(btn.dataset.tab==='transfer'){
+    setTimeout(renderTransfer, 30);
+  }
+});
+
+document.getElementById('btn-add').addEventListener('click', async ()=>{
+  const type = document.getElementById('f-type').value;
+  const qty = document.getElementById('f-qty').value;
+  const dateVal = document.getElementById('f-date').value;
+  if(!qty || num(qty)===0){ showToast('Quantity likhna zaroori hai.'); return; }
+  if(!dateVal){ showToast('Date likhna zaroori hai (Daily WIP isi se kaam karta hai).'); return; }
+  const e = {
+    id: uid(),
+    type,
+    date: dateVal,
+    sendFrom: normalizeUnitValue(document.getElementById('f-sendfrom').value.trim()),
+    sendTo: normalizeUnitValue(document.getElementById('f-sendto').value.trim()),
+    brand: document.getElementById('f-brand').value.trim(),
+    ampo: document.getElementById('f-ampo').value.trim(),
+    itemDesc: document.getElementById('f-itemdesc').value.trim(),
+    cutno: document.getElementById('f-cutno').value.trim(),
+    qty: num(qty),
+    gatepass: document.getElementById('f-gatepass').value.trim(),
+    remarks: document.getElementById('f-remarks').value.trim()
+  };
+  try{
+    await addEntryRemote(e);
+    ['f-sendfrom','f-sendto','f-brand','f-ampo','f-itemdesc','f-cutno','f-qty','f-gatepass','f-remarks'].forEach(id=>document.getElementById(id).value='');
+  }catch(err){ console.error(err); showToast('Save nahi ho saka: ' + (err && err.message ? err.message : err)); }
+});
+
+const clearBtn = document.getElementById('btn-clear');
+let clearArmed = false;
+let clearArmTimer = null;
+clearBtn.addEventListener('click', async ()=>{
+  if(!clearArmed){
+    clearArmed = true;
+    clearBtn.textContent = 'Click Again to Confirm Delete';
+    clearBtn.classList.add('confirming');
+    clearArmTimer = setTimeout(()=>{
+      clearArmed = false;
+      clearBtn.textContent = 'Clear All Data';
+      clearBtn.classList.remove('confirming');
+    }, 4000);
+    return;
+  }
+  clearTimeout(clearArmTimer);
+  clearArmed = false;
+  clearBtn.textContent = 'Clear All Data';
+  clearBtn.classList.remove('confirming');
+  clearBtn.disabled = true;
+  clearBtn.textContent = 'Deleting...';
+  try{
+    await clearAllRemote();
+    showToast('Sara data delete ho gaya.');
+  }catch(err){ console.error(err); showToast('Delete nahi ho saka — internet check karein.'); }
+  finally{
+    clearBtn.disabled = false;
+    clearBtn.textContent = 'Clear All Data';
+  }
+});
+
+document.getElementById('btn-export').addEventListener('click', ()=>{
+  const header = ['TYPE','GP_DATE','SEND_FROM','SEND_TO','BRAND','AM_PO','ITEM_DESCRIPTION','CUT_NO','QUANTITY','GATEPASS','REMARKS'];
+  const lines = [header.join(',')];
+  entries.forEach(e=>{
+    const row = [e.type,e.date,e.sendFrom,e.sendTo,e.brand,e.ampo,e.itemDesc,e.cutno,e.qty,e.gatepass,e.remarks]
+      .map(v=>`"${String(v??'').replace(/"/g,'""')}"`);
+    lines.push(row.join(','));
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'wip_entries.csv'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('btn-import').addEventListener('click', ()=>document.getElementById('file-import').click());
+document.getElementById('file-import').addEventListener('change', (ev)=>{
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    const text = e.target.result;
+    const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+    if(lines.length<2) return;
+    const header = parseCsvLine(lines[0]).map(h=>h.trim().toUpperCase());
+    const idx = (name)=>header.indexOf(name);
+    const iType=idx('TYPE'), iDate=idx('GP_DATE'), iFrom=idx('SEND_FROM'), iTo=idx('SEND_TO'),
+      iBrand=idx('BRAND'), iPo=idx('AM_PO'), iItem=idx('ITEM_DESCRIPTION'), iCut=idx('CUT_NO'),
+      iQty=(idx('QUANTITY')>=0?idx('QUANTITY'):idx('QUANTITY2')),
+      iGp=idx('GATEPASS'), iRem=idx('REMARKS');
+    let added = 0;
+    const newRows = [];
+    for(let i=1;i<lines.length;i++){
+      const cols = parseCsvLine(lines[i]);
+      if(cols.length<2) continue;
+      const type = iType>=0 ? cols[iType] : '';
+      if(!type) continue;
+      newRows.push({
+        id: uid(),
+        type: normalizeTypeValue(type),
+        date: iDate>=0? normalizeDate(cols[iDate]):'',
+        sendFrom: iFrom>=0? normalizeUnitValue(cols[iFrom]):'',
+        sendTo: iTo>=0? normalizeUnitValue(cols[iTo]):'',
+        brand: iBrand>=0? cols[iBrand]:'',
+        ampo: iPo>=0? cols[iPo]:'',
+        itemDesc: iItem>=0? cols[iItem]:'',
+        cutno: iCut>=0? cols[iCut]:'',
+        qty: iQty>=0? num(cols[iQty]):0,
+        gatepass: iGp>=0? cols[iGp]:'',
+        remarks: iRem>=0? cols[iRem]:''
+      });
+      added++;
+    }
+    try{
+      await bulkAddRemote(newRows);
+      showToast(added + ' rows import ho gayi.');
+    }catch(err){ console.error(err); showToast('Import save nahi ho saka: ' + (err && err.message ? err.message : err)); }
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+});
+
+function parseCsvLine(line){
+  const out=[]; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQ){
+      if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; }
+      else cur+=c;
+    } else {
+      if(c===','){ out.push(cur); cur=''; }
+      else if(c==='"'){ inQ=true; }
+      else cur+=c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+function buildAllPoRows(){
+  const pos = uniqueSorted(entries.map(e=>e.ampo)).filter(po=>po);
+  const receivedPoSet = getStitchingReceivedPoSet();
+  return pos.map(po=>{
+    const pm = e => (e.ampo||'')===po;
+    const rowEntries = entries.filter(pm);
+    const brands = uniqueSorted(rowEntries.map(e=>e.brand));
+    const items = uniqueSorted(rowEntries.map(e=>e.itemDesc));
+    const units = uniqueSorted(rowEntries.flatMap(e=>[e.sendFrom, e.sendTo]));
+    const recv = sumWhere(e=>pm(e) && isReceivedType(e.type));
+    const intx = sumWhere(e=>pm(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+    const ret = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.RET);
+    const tr = (recv+intx)-ret;
+    const issFin = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.ISSUE);
+    const outtx = sumWhere(e=>pm(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
+    const finret = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.FINRET);
+    const ti = (issFin+outtx)-finret;
+    const wip = ti-tr;
+    return {
+      'PO No.': po,
+      'Brand': brands.join(', '),
+      'Style / Item': items.join(', '),
+      'Units': units.join(', '),
+      'Received': recv,
+      'Other Washing to AM4': intx,
+      'Returned': ret,
+      'Ttl Received': tr,
+      'Issued to Finishing': issFin,
+      'AM4 to Other Washing': outtx,
+      'Ret from Finishing': finret,
+      'Total Issued': ti,
+      'WIP': wip
+    };
+  });
+}
+
+document.getElementById('btn-export-po-excel').addEventListener('click', ()=>{
+  const rows = buildAllPoRows();
+  if(rows.length===0){ showToast('Abhi koi AM PO wali entries nahi hain.'); return; }
+  if(typeof XLSX === 'undefined'){
+    showToast('Excel library load nahi ho saki — internet check karke dobara try karein.');
+    return;
+  }
+  try{
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [ {wch:16},{wch:22},{wch:30},{wch:20},{wch:11},{wch:16},{wch:11},{wch:13},{wch:16},{wch:18},{wch:16},{wch:13},{wch:10} ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'PO-wise WIP');
+    XLSX.writeFile(wb, 'AM4_PO_wise_WIP_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  }catch(err){
+    console.error(err);
+    showToast('Excel banane mein masla aaya: ' + (err && err.message ? err.message : err));
+  }
+});
+
+/* ---------- unit -> unit flow (received from which unit, then issued to which unit) ---------- */
+function buildUnitFlowRows(){
+  const poGroups = {};
+  entries.forEach(e=>{
+    if(!e.ampo) return;
+    if(!poGroups[e.ampo]) poGroups[e.ampo] = [];
+    poGroups[e.ampo].push(e);
+  });
+
+  const pairMap = new Map();
+  Object.keys(poGroups).forEach(po=>{
+    const group = poGroups[po];
+    const fromUnits = uniqueSorted(group.filter(e=>e.type.toLowerCase()===TYPES.RECV).map(e=>e.sendFrom));
+    const toUnits = uniqueSorted(group.filter(e=>e.type.toLowerCase()===TYPES.ISSUE).map(e=>e.sendTo));
+    const recvQty = group.filter(e=>e.type.toLowerCase()===TYPES.RECV).reduce((s,e)=>s+num(e.qty),0);
+    const issQty = group.filter(e=>e.type.toLowerCase()===TYPES.ISSUE).reduce((s,e)=>s+num(e.qty),0);
+    if(recvQty===0 && issQty===0) return;
+
+    const fromKey = fromUnits.join(' + ') || '(unknown)';
+    const toKey = toUnits.join(' + ') || '(not yet issued)';
+    const key = fromKey + '|||' + toKey;
+    if(!pairMap.has(key)) pairMap.set(key, {from: fromKey, to: toKey, recvQty:0, issQty:0, poCount:0});
+    const rec = pairMap.get(key);
+    rec.recvQty += recvQty;
+    rec.issQty += issQty;
+    rec.poCount += 1;
+  });
+
+  return [...pairMap.values()]
+    .sort((a,b)=> a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
+    .map(r=>({
+      'Received From Unit': r.from,
+      'Received Qty': r.recvQty,
+      'Issued To Unit': r.to,
+      'Issued Qty': r.issQty,
+      'PO Count': r.poCount
+    }));
+}
+
+document.getElementById('btn-export-unit-flow-excel').addEventListener('click', ()=>{
+  const rows = buildUnitFlowRows();
+  if(rows.length===0){ showToast('Abhi koi AM PO wali entries nahi hain.'); return; }
+  if(typeof XLSX === 'undefined'){
+    showToast('Excel library load nahi ho saki — internet check karke dobara try karein.');
+    return;
+  }
+  try{
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [ {wch:20},{wch:13},{wch:20},{wch:13},{wch:10} ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Unit Flow');
+    XLSX.writeFile(wb, 'AM4_Unit_Flow_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  }catch(err){
+    console.error(err);
+    showToast('Excel banane mein masla aaya: ' + (err && err.message ? err.message : err));
+  }
+});
+
+document.getElementById('unit-brand-filter').addEventListener('change', renderUnit);
+document.getElementById('btn-lookup').addEventListener('click', doLookup);
+document.getElementById('lk-ampo').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLookup(); });
+document.getElementById('lk-brand').addEventListener('change', refreshStyleDropdown);
+document.getElementById('lk-style').addEventListener('change', renderStyleLookup);
+
+document.getElementById('daily-date').addEventListener('change', renderDailyWip);
+document.getElementById('daily-date').valueAsDate = new Date();
+document.getElementById('f-date').valueAsDate = new Date();
+
+document.getElementById('monthly-month').addEventListener('change', renderMonthlyWip);
+(function setDefaultMonth(){
+  const d = new Date();
+  const val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  document.getElementById('monthly-month').value = val;
+})();
+
+loadEntries();
+
+/* ---------- welcome screen: clock + calendar + enter button ---------- */
+(function welcomeScreenInit(){
+  const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function tickClock(){
+    const now = new Date();
+    const clockEl = document.getElementById('live-clock');
+    const dateEl = document.getElementById('live-date-line');
+    if(clockEl) clockEl.textContent = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+    if(dateEl){
+      dateEl.textContent = DOW[now.getDay()]+', '+now.getDate()+' '+MONTHS_FULL[now.getMonth()]+' '+now.getFullYear();
+    }
+  }
+
+  function buildCalendar(){
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const titleEl = document.getElementById('cal-title');
+    const gridEl = document.getElementById('cal-grid');
+    if(!titleEl || !gridEl) return;
+    titleEl.textContent = MONTHS_FULL[m] + ' ' + y;
+
+    const firstDow = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const today = now.getDate();
+
+    let html = DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+    for(let i=0;i<firstDow;i++){ html += `<div class="cal-day cal-empty">0</div>`; }
+    for(let d=1; d<=daysInMonth; d++){
+      html += `<div class="cal-day${d===today?' cal-today':''}">${d}</div>`;
+    }
+    gridEl.innerHTML = html;
+  }
+
+  tickClock();
+  buildCalendar();
+  setInterval(tickClock, 1000);
+
+  const enterBtn = document.getElementById('btn-enter-app');
+  const screenEl = document.getElementById('welcome-screen');
+  if(enterBtn && screenEl){
+    enterBtn.addEventListener('click', ()=>{
+      screenEl.classList.add('hidden');
+    });
+  }
+})();
+
+</script>
+</body>
+</html>
