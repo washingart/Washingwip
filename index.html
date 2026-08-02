@@ -781,7 +781,7 @@
           <thead>
             <tr>
               <th class="name">Brand</th><th>Received</th><th>Returned</th>
-              <th>Ttl Received</th><th>Issued</th><th>Ret from Finishing</th>
+              <th>Ttl Received</th><th>Issued to Finishing</th><th>AM4 to Other Washing</th><th>Ret from Finishing</th>
               <th>Total Issued</th><th>W.I.P</th>
             </tr>
           </thead>
@@ -797,7 +797,7 @@
           <thead>
             <tr>
               <th class="name">Unit</th><th>Received</th><th>Returned</th><th>Ttl Received</th>
-              <th>Issued</th><th>Ret from Finishing</th><th>WIP</th>
+              <th>Issued to Finishing</th><th>AM4 to Other Washing</th><th>Ret from Finishing</th><th>WIP</th>
             </tr>
           </thead>
           <tbody id="daily-unit-body"></tbody>
@@ -1595,8 +1595,8 @@ function renderDailyWip(){
   }
 
   if(!selectedDate){
-    brandBody.innerHTML = `<tr><td colspan="8" class="empty-note">Date select karein.</td></tr>`;
-    unitBody.innerHTML = `<tr><td colspan="7" class="empty-note">Date select karein.</td></tr>`;
+    brandBody.innerHTML = `<tr><td colspan="9" class="empty-note">Date select karein.</td></tr>`;
+    unitBody.innerHTML = `<tr><td colspan="8" class="empty-note">Date select karein.</td></tr>`;
     return;
   }
 
@@ -1605,7 +1605,7 @@ function renderDailyWip(){
   const receivedPoSet = getStitchingReceivedPoSet();
 
   // brand-wise for the day
-  let bTot = {recv:0,ret:0,tr:0,iss:0,finret:0,ti:0,wip:0};
+  let bTot = {recv:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,ti:0,wip:0};
   const brandRows = brands.map(brand=>{
     const isMatch = e => dayOk(e) && (e.brand||'')===brand;
     const recv = sumWhere(e=>isMatch(e) && isReceivedType(e.type));
@@ -1613,46 +1613,44 @@ function renderDailyWip(){
     const tr = recv+ret;
     const issFin = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.ISSUE);
     const outtx = sumWhere(e=>isMatch(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-    const iss = issFin+outtx;
     const finret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.FINRET);
     const ti = (issFin+finret)-outtx;
     const wip = ti-tr;
-    if(recv===0 && ret===0 && iss===0 && finret===0) return null;
-    bTot.recv+=recv; bTot.ret+=ret; bTot.tr+=tr; bTot.iss+=iss; bTot.finret+=finret; bTot.ti+=ti; bTot.wip+=wip;
+    if(recv===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
+    bTot.recv+=recv; bTot.ret+=ret; bTot.tr+=tr; bTot.issFin+=issFin; bTot.outtx+=outtx; bTot.finret+=finret; bTot.ti+=ti; bTot.wip+=wip;
     return `<tr>
       <td class="name">${brand}</td>
       <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
-      <td>${fmt(iss)}</td><td>${fmt(finret)}</td><td>${fmt(ti)}</td>
+      <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td><td>${fmt(ti)}</td>
       <td class="${cellClass(wip)}">${fmt(wip)}</td>
     </tr>`;
   }).filter(Boolean);
-  brandBody.innerHTML = (brandRows.length? brandRows.join('') : `<tr><td colspan="8" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
+  brandBody.innerHTML = (brandRows.length? brandRows.join('') : `<tr><td colspan="9" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
     + `<tr class="total"><td class="name">Total</td><td>${fmt(bTot.recv)}</td><td>${fmt(bTot.ret)}</td><td>${fmt(bTot.tr)}</td>
-       <td>${fmt(bTot.iss)}</td><td>${fmt(bTot.finret)}</td><td>${fmt(bTot.ti)}</td><td class="${cellClass(bTot.wip)}">${fmt(bTot.wip)}</td></tr>`;
+       <td>${fmt(bTot.issFin)}</td><td>${fmt(bTot.outtx)}</td><td>${fmt(bTot.finret)}</td><td>${fmt(bTot.ti)}</td><td class="${cellClass(bTot.wip)}">${fmt(bTot.wip)}</td></tr>`;
 
   // unit-wise for the day
-  let uTot = {recv:0,ret:0,tr:0,iss:0,finret:0,wip:0};
+  let uTot = {recv:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,wip:0};
   const unitRows = units.map(unit=>{
     const recv = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && isReceivedType(e.type));
     const ret = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.RET);
     const tr = recv+ret;
     const issFin = sumWhere(e=>dayOk(e) && (e.sendTo||'')===unit && e.type.toLowerCase()===TYPES.ISSUE);
     const outtx = sumWhere(e=>dayOk(e) && (e.sendTo||'')===unit && isTraceableOutgoingTransfer(e, receivedPoSet));
-    const iss = issFin+outtx;
     const finret = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.FINRET);
     const wip = ((issFin+finret)-outtx)-tr;
-    if(recv===0 && ret===0 && iss===0 && finret===0) return null;
-    uTot.recv+=recv; uTot.ret+=ret; uTot.tr+=tr; uTot.iss+=iss; uTot.finret+=finret; uTot.wip+=wip;
+    if(recv===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
+    uTot.recv+=recv; uTot.ret+=ret; uTot.tr+=tr; uTot.issFin+=issFin; uTot.outtx+=outtx; uTot.finret+=finret; uTot.wip+=wip;
     return `<tr>
       <td class="name">${unit}</td>
       <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
-      <td>${fmt(iss)}</td><td>${fmt(finret)}</td>
+      <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td>
       <td class="${cellClass(wip)}">${fmt(wip)}</td>
     </tr>`;
   }).filter(Boolean);
-  unitBody.innerHTML = (unitRows.length? unitRows.join('') : `<tr><td colspan="7" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
+  unitBody.innerHTML = (unitRows.length? unitRows.join('') : `<tr><td colspan="8" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
     + `<tr class="total"><td class="name">Total</td><td>${fmt(uTot.recv)}</td><td>${fmt(uTot.ret)}</td><td>${fmt(uTot.tr)}</td>
-       <td>${fmt(uTot.iss)}</td><td>${fmt(uTot.finret)}</td><td class="${cellClass(uTot.wip)}">${fmt(uTot.wip)}</td></tr>`;
+       <td>${fmt(uTot.issFin)}</td><td>${fmt(uTot.outtx)}</td><td>${fmt(uTot.finret)}</td><td class="${cellClass(uTot.wip)}">${fmt(uTot.wip)}</td></tr>`;
 }
 
 /* ---------- monthly WIP (opening + this month's activity = closing) ---------- */
@@ -2172,6 +2170,13 @@ document.getElementById('btn-add').addEventListener('click', async ()=>{
   const dateVal = document.getElementById('f-date').value;
   if(!qty || num(qty)===0){ showToast('Quantity likhna zaroori hai.'); return; }
   if(!dateVal){ showToast('Date likhna zaroori hai (Daily WIP isi se kaam karta hai).'); return; }
+  // Return-from-Finishing aur AM4->Other Washing hamesha MINUS (negative) qty ke taur par store hote hain,
+  // taake "Total Issued" ka formula sahi rahe — user chahe + ya - likhe, system khud sahi sign laga deta hai.
+  const typeLower = (type||'').toLowerCase();
+  let signedQty = num(qty);
+  if(typeLower===TYPES.FINRET || typeLower===TYPES.OUTTX){
+    signedQty = -Math.abs(signedQty);
+  }
   const e = {
     id: uid(),
     type,
@@ -2182,7 +2187,7 @@ document.getElementById('btn-add').addEventListener('click', async ()=>{
     ampo: document.getElementById('f-ampo').value.trim(),
     itemDesc: document.getElementById('f-itemdesc').value.trim(),
     cutno: document.getElementById('f-cutno').value.trim(),
-    qty: num(qty),
+    qty: signedQty,
     gatepass: document.getElementById('f-gatepass').value.trim(),
     remarks: document.getElementById('f-remarks').value.trim()
   };
@@ -2260,9 +2265,15 @@ document.getElementById('file-import').addEventListener('change', (ev)=>{
       if(cols.length<2) continue;
       const type = iType>=0 ? cols[iType] : '';
       if(!type) continue;
+      const normType = normalizeTypeValue(type);
+      let rowQty = iQty>=0? num(cols[iQty]):0;
+      const normTypeLower = (normType||'').toLowerCase();
+      if(normTypeLower===TYPES.FINRET || normTypeLower===TYPES.OUTTX){
+        rowQty = -Math.abs(rowQty);
+      }
       newRows.push({
         id: uid(),
-        type: normalizeTypeValue(type),
+        type: normType,
         date: iDate>=0? normalizeDate(cols[iDate]):'',
         sendFrom: iFrom>=0? normalizeUnitValue(cols[iFrom]):'',
         sendTo: iTo>=0? normalizeUnitValue(cols[iTo]):'',
@@ -2270,7 +2281,7 @@ document.getElementById('file-import').addEventListener('change', (ev)=>{
         ampo: iPo>=0? cols[iPo]:'',
         itemDesc: iItem>=0? cols[iItem]:'',
         cutno: iCut>=0? cols[iCut]:'',
-        qty: iQty>=0? num(cols[iQty]):0,
+        qty: rowQty,
         gatepass: iGp>=0? cols[iGp]:'',
         remarks: iRem>=0? cols[iRem]:''
       });
