@@ -307,7 +307,8 @@
   .home-hero{
     position:relative; border-radius:20px; overflow:hidden; margin-bottom:20px;
     background:#0e1630;
-    box-shadow:var(--shadow-md); min-height:340px;
+    box-shadow:var(--shadow-md);
+    min-height:clamp(260px, 28vw, 420px);
     display:flex; align-items:flex-end;
   }
   .home-hero::before{
