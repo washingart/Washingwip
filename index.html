@@ -4,9 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AM-4 Washing WIP Report</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e1630">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AM4 WIP">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -697,7 +712,7 @@
           <thead>
             <tr>
               <th class="name">Brand</th><th>Received From Stitching</th><th>Returned to Stitching</th>
-              <th>Total Received</th><th>Issued to Finishing</th><th>AM4 &rarr; Other Washing</th><th>Finishing Return to Washing</th>
+              <th>Other Washing &rarr; AM4</th><th>Total Received</th><th>Issued to Finishing</th><th>AM4 &rarr; Other Washing</th><th>Finishing Return to Washing</th>
               <th>Total Issued</th><th>W.I.P</th>
             </tr>
           </thead>
@@ -721,7 +736,7 @@
         <table id="unit-table">
           <thead>
             <tr>
-              <th class="name">Unit</th><th>Received</th><th>Returned</th><th>Ttl Received</th>
+              <th class="name">Unit</th><th>Received</th><th>Returned</th><th>Other Washing &rarr; AM4</th><th>Ttl Received</th>
               <th>Issued</th><th>AM4 &rarr; Other Washing</th><th>Ret from Finishing</th><th>WIP</th>
             </tr>
           </thead>
@@ -780,7 +795,7 @@
         <table id="daily-brand-table">
           <thead>
             <tr>
-              <th class="name">Brand</th><th>Received</th><th>Returned</th>
+              <th class="name">Brand</th><th>Received</th><th>Returned</th><th>Other Washing to AM4</th>
               <th>Ttl Received</th><th>Issued to Finishing</th><th>AM4 to Other Washing</th><th>Ret from Finishing</th>
               <th>Total Issued</th><th>W.I.P</th>
             </tr>
@@ -796,7 +811,7 @@
         <table id="daily-unit-table">
           <thead>
             <tr>
-              <th class="name">Unit</th><th>Received</th><th>Returned</th><th>Ttl Received</th>
+              <th class="name">Unit</th><th>Received</th><th>Returned</th><th>Other Washing to AM4</th><th>Ttl Received</th>
               <th>Issued to Finishing</th><th>AM4 to Other Washing</th><th>Ret from Finishing</th><th>WIP</th>
             </tr>
           </thead>
@@ -882,7 +897,7 @@
 
     <div class="card">
       <h2>All PO&#8209;wise WIP Report <span class="hint">poore data ka PO&#8209;wise breakdown — Excel mein download karein</span></h2>
-      <p style="margin:0 0 14px;color:var(--ink-soft);font-size:13.5px;">Har PO ka Brand, Style, Unit, Received, Returned, Ttl Received, Issued, Ret from Finishing, aur WIP — ek Excel file mein.</p>
+      <p style="margin:0 0 14px;color:var(--ink-soft);font-size:13.5px;">Har PO ka Brand, Style, Unit, Received, Returned, Other Washing&rarr;AM4, Ttl Received, Issued, AM4&rarr;Other Washing, Ret from Finishing, aur WIP — ek Excel file mein.</p>
       <div class="actions" style="margin-top:0;">
         <button class="btn" id="btn-export-po-excel">&#8681; Download Excel (All PO&#8209;wise WIP)</button>
       </div>
@@ -1088,10 +1103,21 @@ function isIncomingTransferType(type){
   return (type||'').toLowerCase()===TYPES.INTX;
 }
 // "Other Washing → AM4" shown as its own visible column and added into Received —
-// only for POs traceable back to a "Received From Stitching" entry.
+// counts for EVERY PO now, regardless of whether it was ever "Received From Stitching".
 // Use this instead of isIncomingTransferType() in every tab except Movement/Transfer.
 function isTraceableIncomingTransfer(e, receivedPoSet){
-  return isIncomingTransferType(e.type) && e.ampo && receivedPoSet.has(e.ampo);
+  return isIncomingTransferType(e.type);
+}
+// Issued-to-Finishing counts for EVERY PO, regardless of whether it was ever
+// "Received From Stitching" — user requested this show everywhere (all tabs + Excel).
+// Ret-from-Finishing still only counts for POs traceable back to a "Received From
+// Stitching" entry — same rule as AM4->Other Washing transfers.
+// Use these instead of a raw TYPES.ISSUE / TYPES.FINRET check wherever a WIP total is built.
+function isTraceableIssueType(e, receivedPoSet){
+  return (e.type||'').toLowerCase()===TYPES.ISSUE;
+}
+function isTraceableFinRetType(e, receivedPoSet){
+  return (e.type||'').toLowerCase()===TYPES.FINRET && e.ampo && receivedPoSet.has(e.ampo);
 }
 const KNOWN_UNITS = ['4T2','AM11','AM12','AM14','AM15A','AM15X','AM4','AM4C','AM6','AM7','AMG','AT1','AT2','PQ-GU'];
 const KNOWN_BRANDS = ['ART CLASS',"Big Star Men's",'BR','BUTLER MENS','BUTLER WOMENS','EB DENIM','FABLETICS',
@@ -1289,48 +1315,50 @@ function renderStyleLookup(){
   const receivedPoSet = getStitchingReceivedPoSet();
   const recv = sumWhere(e=>match(e) && isReceivedType(e.type));
   const ret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.RET);
-  const tr = recv+ret;
-  const issFinishing = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.ISSUE);
+  const intx = sumWhere(e=>match(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+  const tr = recv+ret+intx;
+  const issFinishing = sumWhere(e=>match(e) && isTraceableIssueType(e, receivedPoSet));
   const outtx = sumWhere(e=>match(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-  const finret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.FINRET);
+  const finret = sumWhere(e=>match(e) && isTraceableFinRetType(e, receivedPoSet));
   const iss = (issFinishing + finret) - outtx;
   const wip = iss-tr;
 
   const pos = uniqueSorted(entries.filter(match).map(e=>e.ampo));
   let poRowsHtml = '';
   if(pos.length){
-    let tot = {recv:0,ret:0,tr:0,iss:0,finret:0,totalIss:0,wip:0};
+    let tot = {recv:0,ret:0,intx:0,tr:0,issFin:0,outtx:0,finret:0,totalIss:0,wip:0};
     const receivedPoSet = getStitchingReceivedPoSet();
     poRowsHtml = pos.map(po=>{
       const pm = e => match(e) && (e.ampo||'')===po;
       const pRecv = sumWhere(e=>pm(e) && isReceivedType(e.type));
       const pRet = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.RET);
-      const pTr = pRecv+pRet;
-      const pIssFin = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.ISSUE);
+      const pIntx = sumWhere(e=>pm(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+      const pTr = pRecv+pRet+pIntx;
+      const pIssFin = sumWhere(e=>pm(e) && isTraceableIssueType(e, receivedPoSet));
       const pOuttx = sumWhere(e=>pm(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-      const pIss = pIssFin + pOuttx;
-      const pFinret = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.FINRET);
+      const pFinret = sumWhere(e=>pm(e) && isTraceableFinRetType(e, receivedPoSet));
       const pTotalIss = (pIssFin + pFinret) - pOuttx;
       const pWip = pTotalIss-pTr;
       const poUnits = uniqueSorted(entries.filter(pm).flatMap(e=>[e.sendFrom, e.sendTo]));
-      tot.recv+=pRecv; tot.ret+=pRet; tot.tr+=pTr; tot.iss+=pIss; tot.finret+=pFinret; tot.totalIss+=pTotalIss; tot.wip+=pWip;
+      tot.recv+=pRecv; tot.ret+=pRet; tot.intx+=pIntx; tot.tr+=pTr; tot.issFin+=pIssFin; tot.outtx+=pOuttx; tot.finret+=pFinret; tot.totalIss+=pTotalIss; tot.wip+=pWip;
       return `<tr>
         <td class="name">${po||'(blank)'}</td>
         <td class="name">${poUnits.join(', ')||'—'}</td>
-        <td>${fmt(pRecv)}</td><td>${fmt(pRet)}</td><td>${fmt(pTr)}</td>
-        <td>${fmt(pIss)}</td><td>${fmt(pFinret)}</td><td>${fmt(pTotalIss)}</td>
+        <td>${fmt(pRecv)}</td><td>${fmt(pRet)}</td><td>${fmt(pIntx)}</td><td>${fmt(pTr)}</td>
+        <td>${fmt(pIssFin)}</td><td>${fmt(pOuttx)}</td><td>${fmt(pFinret)}</td><td>${fmt(pTotalIss)}</td>
         <td class="${cellClass(pWip)}">${fmt(pWip)}</td>
       </tr>`;
     }).join('') + `<tr class="total"><td class="name">Total (${pos.length} PO${pos.length>1?'s':''})</td><td class="name"></td>
-      <td>${fmt(tot.recv)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.tr)}</td>
-      <td>${fmt(tot.iss)}</td><td>${fmt(tot.finret)}</td><td>${fmt(tot.totalIss)}</td><td class="${cellClass(tot.wip)}">${fmt(tot.wip)}</td></tr>`;
+      <td>${fmt(tot.recv)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.intx)}</td><td>${fmt(tot.tr)}</td>
+      <td>${fmt(tot.issFin)}</td><td>${fmt(tot.outtx)}</td><td>${fmt(tot.finret)}</td><td>${fmt(tot.totalIss)}</td><td class="${cellClass(tot.wip)}">${fmt(tot.wip)}</td></tr>`;
   } else {
-    poRowsHtml = `<tr><td colspan="9" class="empty-note">Is style ke against koi AM PO number entries mein darj nahi hai.</td></tr>`;
+    poRowsHtml = `<tr><td colspan="11" class="empty-note">Is style ke against koi AM PO number entries mein darj nahi hai.</td></tr>`;
   }
 
   box.innerHTML = `<div class="lookup-grid">
     <div class="box"><div class="l">Received</div><div class="v">${fmt(recv)}</div></div>
     <div class="box"><div class="l">Returned</div><div class="v">${fmt(ret)}</div></div>
+    <div class="box"><div class="l">Other Washing &rarr; AM4</div><div class="v">${fmt(intx)}</div></div>
     <div class="box"><div class="l">Ttl Received</div><div class="v">${fmt(tr)}</div></div>
     <div class="box"><div class="l">Issued (Finishing)</div><div class="v">${fmt(issFinishing)}</div></div>
     <div class="box"><div class="l">Issued (Other Washing)</div><div class="v">${fmt(outtx)}</div></div>
@@ -1341,8 +1369,8 @@ function renderStyleLookup(){
   <div class="tablewrap" style="margin-top:14px;">
     <table>
       <thead><tr>
-        <th class="name">PO No.</th><th class="name">Units</th><th>Received</th><th>Returned</th><th>Ttl Received</th>
-        <th>Issued</th><th>Ret from Finishing</th><th>Total Issued</th><th>WIP</th>
+        <th class="name">PO No.</th><th class="name">Units</th><th>Received</th><th>Returned</th><th>Other Washing &rarr; AM4</th><th>Ttl Received</th>
+        <th>Issued to Finishing</th><th>AM4 &rarr; Other Washing</th><th>Ret from Finishing</th><th>Total Issued</th><th>WIP</th>
       </tr></thead>
       <tbody>${poRowsHtml}</tbody>
     </table>
@@ -1392,29 +1420,30 @@ function renderBrand(){
     return;
   }
   const receivedPoSet = getStitchingReceivedPoSet();
-  let tot = {recv:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,ti:0,wip:0};
+  let tot = {recv:0,ret:0,intx:0,tr:0,issFin:0,outtx:0,finret:0,ti:0,wip:0};
   const rowsHtml = brands.map(brand=>{
     const isMatch = e => (e.brand||'')===brand;
     const recv = sumWhere(e=>isMatch(e) && isReceivedType(e.type));
     const ret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.RET);
-    const tr = recv+ret;
-    const issFin = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.ISSUE);
+    const intx = sumWhere(e=>isMatch(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+    const tr = recv+ret+intx;
+    const issFin = sumWhere(e=>isMatch(e) && isTraceableIssueType(e, receivedPoSet));
     const outtx = sumWhere(e=>isMatch(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-    const finret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.FINRET);
+    const finret = sumWhere(e=>isMatch(e) && isTraceableFinRetType(e, receivedPoSet));
     const ti = (issFin+finret)-outtx;
     const wip = ti-tr;
-    if(recv===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
-    tot.recv+=recv; tot.ret+=ret; tot.tr+=tr; tot.issFin+=issFin; tot.outtx+=outtx; tot.finret+=finret; tot.ti+=ti; tot.wip+=wip;
+    if(recv===0 && ret===0 && intx===0 && issFin===0 && outtx===0 && finret===0) return null;
+    tot.recv+=recv; tot.ret+=ret; tot.intx+=intx; tot.tr+=tr; tot.issFin+=issFin; tot.outtx+=outtx; tot.finret+=finret; tot.ti+=ti; tot.wip+=wip;
     return `<tr>
       <td class="name">${brand}</td>
-      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(intx)}</td><td>${fmt(tr)}</td>
       <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td><td>${fmt(ti)}</td>
       <td class="${cellClass(wip)}">${fmt(wip)}</td>
     </tr>`;
   }).filter(Boolean);
 
-  body.innerHTML = (rowsHtml.length? rowsHtml.join('') : `<tr><td colspan="9" class="empty-note">No matching data yet.</td></tr>`)
-    + `<tr class="total"><td class="name">Total</td><td>${fmt(tot.recv)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.tr)}</td>
+  body.innerHTML = (rowsHtml.length? rowsHtml.join('') : `<tr><td colspan="10" class="empty-note">No matching data yet.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(tot.recv)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.intx)}</td><td>${fmt(tot.tr)}</td>
        <td>${fmt(tot.issFin)}</td><td>${fmt(tot.outtx)}</td><td>${fmt(tot.finret)}</td><td>${fmt(tot.ti)}</td><td class="${cellClass(tot.wip)}">${fmt(tot.wip)}</td></tr>`;
 
   document.getElementById('brand-kpis').innerHTML = `
@@ -1435,27 +1464,28 @@ function renderUnit(){
   }
   const brandOk = e => brandFilter==='all brand' || (e.brand||'')===brandFilter;
   const receivedPoSet = getStitchingReceivedPoSet();
-  let tot = {recv:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,wip:0};
+  let tot = {recv:0,ret:0,intx:0,tr:0,issFin:0,outtx:0,finret:0,wip:0};
   const rowsHtml = units.map(unit=>{
     const recv = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && isReceivedType(e.type));
     const ret = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.RET);
-    const tr = recv+ret;
-    const issFin = sumWhere(e=>brandOk(e) && (e.sendTo||'')===unit && e.type.toLowerCase()===TYPES.ISSUE);
+    const intx = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && isTraceableIncomingTransfer(e, receivedPoSet));
+    const tr = recv+ret+intx;
+    const issFin = sumWhere(e=>brandOk(e) && (e.sendTo||'')===unit && isTraceableIssueType(e, receivedPoSet));
     const outtx = sumWhere(e=>brandOk(e) && (e.sendTo||'')===unit && isTraceableOutgoingTransfer(e, receivedPoSet));
-    const finret = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.FINRET);
+    const finret = sumWhere(e=>brandOk(e) && (e.sendFrom||'')===unit && isTraceableFinRetType(e, receivedPoSet));
     const wip = ((issFin+finret)-outtx)-tr;
-    if(recv===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
-    tot.recv+=recv; tot.ret+=ret; tot.tr+=tr; tot.issFin+=issFin; tot.outtx+=outtx; tot.finret+=finret; tot.wip+=wip;
+    if(recv===0 && ret===0 && intx===0 && issFin===0 && outtx===0 && finret===0) return null;
+    tot.recv+=recv; tot.ret+=ret; tot.intx+=intx; tot.tr+=tr; tot.issFin+=issFin; tot.outtx+=outtx; tot.finret+=finret; tot.wip+=wip;
     return `<tr>
       <td class="name">${unit}</td>
-      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(intx)}</td><td>${fmt(tr)}</td>
       <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td>
       <td class="${cellClass(wip)}">${fmt(wip)}</td>
     </tr>`;
   }).filter(Boolean);
 
-  body.innerHTML = (rowsHtml.length? rowsHtml.join('') : `<tr><td colspan="8" class="empty-note">No matching data yet.</td></tr>`)
-    + `<tr class="total"><td class="name">Total</td><td>${fmt(tot.recv)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.tr)}</td>
+  body.innerHTML = (rowsHtml.length? rowsHtml.join('') : `<tr><td colspan="9" class="empty-note">No matching data yet.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(tot.recv)}</td><td>${fmt(tot.ret)}</td><td>${fmt(tot.intx)}</td><td>${fmt(tot.tr)}</td>
        <td>${fmt(tot.issFin)}</td><td>${fmt(tot.outtx)}</td><td>${fmt(tot.finret)}</td><td class="${cellClass(tot.wip)}">${fmt(tot.wip)}</td></tr>`;
 }
 
@@ -1467,6 +1497,7 @@ function monthLabel(ym){
 }
 function buildUnitMonthlyData(){
   const months = uniqueSorted(entries.filter(e=>e.date).map(e=>e.date.slice(0,7))).sort().reverse();
+  const receivedPoSet = getStitchingReceivedPoSet();
   return months.map(month=>{
     const inMonth = e => (e.date||'').slice(0,7)===month;
     const recvMap = new Map();
@@ -1475,7 +1506,7 @@ function buildUnitMonthlyData(){
       const u = e.sendFrom || '(unknown)';
       recvMap.set(u, (recvMap.get(u)||0) + num(e.qty));
     });
-    entries.filter(e=>inMonth(e) && e.type.toLowerCase()===TYPES.ISSUE).forEach(e=>{
+    entries.filter(e=>inMonth(e) && isTraceableIssueType(e, receivedPoSet)).forEach(e=>{
       const u = e.sendTo || '(unknown)';
       issMap.set(u, (issMap.get(u)||0) + num(e.qty));
     });
@@ -1605,51 +1636,53 @@ function renderDailyWip(){
   const receivedPoSet = getStitchingReceivedPoSet();
 
   // brand-wise for the day
-  let bTot = {recv:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,ti:0,wip:0};
+  let bTot = {recv:0,ret:0,intx:0,tr:0,issFin:0,outtx:0,finret:0,ti:0,wip:0};
   const brandRows = brands.map(brand=>{
     const isMatch = e => dayOk(e) && (e.brand||'')===brand;
     const recv = sumWhere(e=>isMatch(e) && isReceivedType(e.type));
     const ret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.RET);
-    const tr = recv+ret;
-    const issFin = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.ISSUE);
+    const intx = sumWhere(e=>isMatch(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+    const tr = recv+ret+intx;
+    const issFin = sumWhere(e=>isMatch(e) && isTraceableIssueType(e, receivedPoSet));
     const outtx = sumWhere(e=>isMatch(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-    const finret = sumWhere(e=>isMatch(e) && e.type.toLowerCase()===TYPES.FINRET);
+    const finret = sumWhere(e=>isMatch(e) && isTraceableFinRetType(e, receivedPoSet));
     const ti = (issFin+finret)-outtx;
     const wip = ti-tr;
-    if(recv===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
-    bTot.recv+=recv; bTot.ret+=ret; bTot.tr+=tr; bTot.issFin+=issFin; bTot.outtx+=outtx; bTot.finret+=finret; bTot.ti+=ti; bTot.wip+=wip;
+    if(recv===0 && ret===0 && intx===0 && issFin===0 && outtx===0 && finret===0) return null;
+    bTot.recv+=recv; bTot.ret+=ret; bTot.intx+=intx; bTot.tr+=tr; bTot.issFin+=issFin; bTot.outtx+=outtx; bTot.finret+=finret; bTot.ti+=ti; bTot.wip+=wip;
     return `<tr>
       <td class="name">${brand}</td>
-      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(intx)}</td><td>${fmt(tr)}</td>
       <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td><td>${fmt(ti)}</td>
       <td class="${cellClass(wip)}">${fmt(wip)}</td>
     </tr>`;
   }).filter(Boolean);
-  brandBody.innerHTML = (brandRows.length? brandRows.join('') : `<tr><td colspan="9" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
-    + `<tr class="total"><td class="name">Total</td><td>${fmt(bTot.recv)}</td><td>${fmt(bTot.ret)}</td><td>${fmt(bTot.tr)}</td>
+  brandBody.innerHTML = (brandRows.length? brandRows.join('') : `<tr><td colspan="10" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(bTot.recv)}</td><td>${fmt(bTot.ret)}</td><td>${fmt(bTot.intx)}</td><td>${fmt(bTot.tr)}</td>
        <td>${fmt(bTot.issFin)}</td><td>${fmt(bTot.outtx)}</td><td>${fmt(bTot.finret)}</td><td>${fmt(bTot.ti)}</td><td class="${cellClass(bTot.wip)}">${fmt(bTot.wip)}</td></tr>`;
 
   // unit-wise for the day
-  let uTot = {recv:0,ret:0,tr:0,issFin:0,outtx:0,finret:0,wip:0};
+  let uTot = {recv:0,ret:0,intx:0,tr:0,issFin:0,outtx:0,finret:0,wip:0};
   const unitRows = units.map(unit=>{
     const recv = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && isReceivedType(e.type));
     const ret = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.RET);
-    const tr = recv+ret;
-    const issFin = sumWhere(e=>dayOk(e) && (e.sendTo||'')===unit && e.type.toLowerCase()===TYPES.ISSUE);
+    const intx = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && isTraceableIncomingTransfer(e, receivedPoSet));
+    const tr = recv+ret+intx;
+    const issFin = sumWhere(e=>dayOk(e) && (e.sendTo||'')===unit && isTraceableIssueType(e, receivedPoSet));
     const outtx = sumWhere(e=>dayOk(e) && (e.sendTo||'')===unit && isTraceableOutgoingTransfer(e, receivedPoSet));
-    const finret = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.FINRET);
+    const finret = sumWhere(e=>dayOk(e) && (e.sendFrom||'')===unit && isTraceableFinRetType(e, receivedPoSet));
     const wip = ((issFin+finret)-outtx)-tr;
-    if(recv===0 && ret===0 && issFin===0 && outtx===0 && finret===0) return null;
-    uTot.recv+=recv; uTot.ret+=ret; uTot.tr+=tr; uTot.issFin+=issFin; uTot.outtx+=outtx; uTot.finret+=finret; uTot.wip+=wip;
+    if(recv===0 && ret===0 && intx===0 && issFin===0 && outtx===0 && finret===0) return null;
+    uTot.recv+=recv; uTot.ret+=ret; uTot.intx+=intx; uTot.tr+=tr; uTot.issFin+=issFin; uTot.outtx+=outtx; uTot.finret+=finret; uTot.wip+=wip;
     return `<tr>
       <td class="name">${unit}</td>
-      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(tr)}</td>
+      <td>${fmt(recv)}</td><td>${fmt(ret)}</td><td>${fmt(intx)}</td><td>${fmt(tr)}</td>
       <td>${fmt(issFin)}</td><td>${fmt(outtx)}</td><td>${fmt(finret)}</td>
       <td class="${cellClass(wip)}">${fmt(wip)}</td>
     </tr>`;
   }).filter(Boolean);
-  unitBody.innerHTML = (unitRows.length? unitRows.join('') : `<tr><td colspan="8" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
-    + `<tr class="total"><td class="name">Total</td><td>${fmt(uTot.recv)}</td><td>${fmt(uTot.ret)}</td><td>${fmt(uTot.tr)}</td>
+  unitBody.innerHTML = (unitRows.length? unitRows.join('') : `<tr><td colspan="9" class="empty-note">Is date ke liye koi entries nahi hain.</td></tr>`)
+    + `<tr class="total"><td class="name">Total</td><td>${fmt(uTot.recv)}</td><td>${fmt(uTot.ret)}</td><td>${fmt(uTot.intx)}</td><td>${fmt(uTot.tr)}</td>
        <td>${fmt(uTot.issFin)}</td><td>${fmt(uTot.outtx)}</td><td>${fmt(uTot.finret)}</td><td class="${cellClass(uTot.wip)}">${fmt(uTot.wip)}</td></tr>`;
 }
 
@@ -1661,11 +1694,11 @@ function wipAsOf(matchFn){
   const intx = sumWhere(e=>matchFn(e) && isTraceableIncomingTransfer(e, receivedPoSet));
   const recv = recvStitch + intx;
   const ret = sumWhere(e=>matchFn(e) && e.type.toLowerCase()===TYPES.RET);
-  const tr = recvStitch+ret;
-  const issFin = sumWhere(e=>matchFn(e) && e.type.toLowerCase()===TYPES.ISSUE);
+  const tr = recvStitch+ret+intx;
+  const issFin = sumWhere(e=>matchFn(e) && isTraceableIssueType(e, receivedPoSet));
   const outtx = sumWhere(e=>matchFn(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
   const iss = issFin+outtx;
-  const finret = sumWhere(e=>matchFn(e) && e.type.toLowerCase()===TYPES.FINRET);
+  const finret = sumWhere(e=>matchFn(e) && isTraceableFinRetType(e, receivedPoSet));
   const ti = (issFin+finret)-outtx;
   return { recv, recvStitch, intx, ret, tr, iss, finret, ti, wip: ti-tr };
 }
@@ -1676,11 +1709,11 @@ function wipAsOfUnit(unit, extraFilter){
   const intx = sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && isTraceableIncomingTransfer(e, receivedPoSet));
   const recv = recvStitch + intx;
   const ret = sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.RET);
-  const tr = recvStitch+ret;
-  const issFin = sumWhere(e=>extraFilter(e) && (e.sendTo||'')===unit && e.type.toLowerCase()===TYPES.ISSUE);
+  const tr = recvStitch+ret+intx;
+  const issFin = sumWhere(e=>extraFilter(e) && (e.sendTo||'')===unit && isTraceableIssueType(e, receivedPoSet));
   const outtx = sumWhere(e=>extraFilter(e) && (e.sendTo||'')===unit && isTraceableOutgoingTransfer(e, receivedPoSet));
   const iss = issFin+outtx;
-  const finret = sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && e.type.toLowerCase()===TYPES.FINRET);
+  const finret = sumWhere(e=>extraFilter(e) && (e.sendFrom||'')===unit && isTraceableFinRetType(e, receivedPoSet));
   const ti = (issFin+finret)-outtx;
   return { recv, recvStitch, intx, ret, tr, iss, finret, ti, wip: ti-tr };
 }
@@ -1768,15 +1801,17 @@ function doLookup(){
   const receivedPoSet = getStitchingReceivedPoSet();
   const recv = sumWhere(e=>match(e) && isReceivedType(e.type));
   const ret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.RET);
-  const tr = recv+ret;
-  const issFinishing = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.ISSUE);
+  const intx = sumWhere(e=>match(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+  const tr = recv+ret+intx;
+  const issFinishing = sumWhere(e=>match(e) && isTraceableIssueType(e, receivedPoSet));
   const issOtherWashing = sumWhere(e=>match(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-  const finret = sumWhere(e=>match(e) && e.type.toLowerCase()===TYPES.FINRET);
+  const finret = sumWhere(e=>match(e) && isTraceableFinRetType(e, receivedPoSet));
   const iss = (issFinishing + finret) - issOtherWashing;
   const wip = iss-tr;
   box.innerHTML = `<div class="lookup-grid">
     <div class="box"><div class="l">Received</div><div class="v">${fmt(recv)}</div></div>
     <div class="box"><div class="l">Returned</div><div class="v">${fmt(ret)}</div></div>
+    <div class="box"><div class="l">Other Washing &rarr; AM4</div><div class="v">${fmt(intx)}</div></div>
     <div class="box"><div class="l">Ttl Received</div><div class="v">${fmt(tr)}</div></div>
     <div class="box"><div class="l">Issued (Finishing)</div><div class="v">${fmt(issFinishing)}</div></div>
     <div class="box"><div class="l">Issued (Other Washing)</div><div class="v">${fmt(issOtherWashing)}</div></div>
@@ -1892,11 +1927,11 @@ function renderFlowDiagram(){
   const intx = sumWhere(e=>isTraceableIncomingTransfer(e, receivedPoSet));
   const recv = recvStitch + intx;
   const ret = sumWhere(e=>e.type.toLowerCase()===TYPES.RET);
-  const tr = recvStitch+ret;
-  const issFin = sumWhere(e=>e.type.toLowerCase()===TYPES.ISSUE);
+  const tr = recvStitch+ret+intx;
+  const issFin = sumWhere(e=>isTraceableIssueType(e, receivedPoSet));
   const outtx = sumWhere(e=>isTraceableOutgoingTransfer(e, receivedPoSet));
   const iss = issFin+outtx;
-  const finret = sumWhere(e=>e.type.toLowerCase()===TYPES.FINRET);
+  const finret = sumWhere(e=>isTraceableFinRetType(e, receivedPoSet));
   const ti = (issFin+finret)-outtx;
   const wip = ti-tr;
   const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = fmt(val); };
@@ -1917,24 +1952,26 @@ function buildBrandUnitSeries(kind){
   const keys = kind==='brand' ? brands : units;
   const receivedPoSet = getStitchingReceivedPoSet();
   const rows = keys.map(k=>{
-    let recv, recvStitch, ret, issFin, outtx, finret;
+    let recv, recvStitch, ret, intx, issFin, outtx, finret;
     if(kind==='brand'){
       const m = e => (e.brand||'')===k;
       recvStitch = sumWhere(e=>m(e) && isReceivedType(e.type));
-      recv = recvStitch + sumWhere(e=>m(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+      intx = sumWhere(e=>m(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+      recv = recvStitch + intx;
       ret = sumWhere(e=>m(e) && e.type.toLowerCase()===TYPES.RET);
-      issFin = sumWhere(e=>m(e) && e.type.toLowerCase()===TYPES.ISSUE);
+      issFin = sumWhere(e=>m(e) && isTraceableIssueType(e, receivedPoSet));
       outtx = sumWhere(e=>m(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-      finret = sumWhere(e=>m(e) && e.type.toLowerCase()===TYPES.FINRET);
+      finret = sumWhere(e=>m(e) && isTraceableFinRetType(e, receivedPoSet));
     } else {
       recvStitch = sumWhere(e=>(e.sendFrom||'')===k && isReceivedType(e.type));
-      recv = recvStitch + sumWhere(e=>(e.sendFrom||'')===k && isTraceableIncomingTransfer(e, receivedPoSet));
+      intx = sumWhere(e=>(e.sendFrom||'')===k && isTraceableIncomingTransfer(e, receivedPoSet));
+      recv = recvStitch + intx;
       ret = sumWhere(e=>(e.sendFrom||'')===k && e.type.toLowerCase()===TYPES.RET);
-      issFin = sumWhere(e=>(e.sendTo||'')===k && e.type.toLowerCase()===TYPES.ISSUE);
+      issFin = sumWhere(e=>(e.sendTo||'')===k && isTraceableIssueType(e, receivedPoSet));
       outtx = sumWhere(e=>(e.sendTo||'')===k && isTraceableOutgoingTransfer(e, receivedPoSet));
-      finret = sumWhere(e=>(e.sendFrom||'')===k && e.type.toLowerCase()===TYPES.FINRET);
+      finret = sumWhere(e=>(e.sendFrom||'')===k && isTraceableFinRetType(e, receivedPoSet));
     }
-    const tr = recvStitch+ret;
+    const tr = recvStitch+ret+intx;
     const ti = (issFin+finret)-outtx;
     const wip = ti-tr;
     return {key:k, tr, ti, wip, vol: Math.abs(tr)+Math.abs(ti)+Math.abs(wip)};
@@ -2033,18 +2070,19 @@ function renderHome(){
   const isToday = e => (e.date||'')===yday;
   const receivedPoSet = getStitchingReceivedPoSet();
   const recvToday = sumWhere(e=>isToday(e) && e.type.toLowerCase()===TYPES.RECV);
-  const issToday = sumWhere(e=>isToday(e) && e.type.toLowerCase()===TYPES.ISSUE);
-  const finretToday = sumWhere(e=>isToday(e) && e.type.toLowerCase()===TYPES.FINRET);
+  const issToday = sumWhere(e=>isToday(e) && isTraceableIssueType(e, receivedPoSet));
+  const finretToday = sumWhere(e=>isToday(e) && isTraceableFinRetType(e, receivedPoSet));
   // Other Washing Yesterday = sirf stitching-traceable POs ke transfers (Movement tab ke alawa
   // har jagah wahi rule: jo PO stitching se receive hua wahi count hoga).
   const otherToday = sumWhere(e=>isToday(e) && (isTraceableOutgoingTransfer(e, receivedPoSet) || isTraceableIncomingTransfer(e, receivedPoSet)));
 
   const recv = sumWhere(e=>isReceivedType(e.type));
   const ret = sumWhere(e=>e.type.toLowerCase()===TYPES.RET);
-  const tr = recv+ret;
-  const issFin = sumWhere(e=>e.type.toLowerCase()===TYPES.ISSUE);
+  const intx = sumWhere(e=>isTraceableIncomingTransfer(e, receivedPoSet));
+  const tr = recv+ret+intx;
+  const issFin = sumWhere(e=>isTraceableIssueType(e, receivedPoSet));
   const outtx = sumWhere(e=>isTraceableOutgoingTransfer(e, receivedPoSet));
-  const finret = sumWhere(e=>e.type.toLowerCase()===TYPES.FINRET);
+  const finret = sumWhere(e=>isTraceableFinRetType(e, receivedPoSet));
   const ti = (issFin+finret)-outtx;
   const wip = ti-tr;
 
@@ -2318,16 +2356,23 @@ function buildAllPoRows(){
   const receivedPoSet = getStitchingReceivedPoSet();
   return pos.map(po=>{
     const pm = e => (e.ampo||'')===po;
+    const wasReceivedFromStitching = receivedPoSet.has(po);
     const rowEntries = entries.filter(pm);
     const brands = uniqueSorted(rowEntries.map(e=>e.brand));
     const items = uniqueSorted(rowEntries.map(e=>e.itemDesc));
     const units = uniqueSorted(rowEntries.flatMap(e=>[e.sendFrom, e.sendTo]));
     const recv = sumWhere(e=>pm(e) && isReceivedType(e.type));
     const ret = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.RET);
-    const tr = recv+ret;
+    // Other Washing -> AM4 (incoming transfer) counts for EVERY PO now.
+    const intx = sumWhere(e=>pm(e) && isTraceableIncomingTransfer(e, receivedPoSet));
+    const tr = recv+ret+intx;
+    // Ret from Finishing / AM4->Other Washing only count for POs that were
+    // actually received via "Received From Stitching" — agar wo PO kabhi receive hi nahi hua to
+    // uski finret bhi report mein nahi dikhegi.
+    // Issued to Finishing counts for EVERY PO, received-from-stitching or not.
     const issFin = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.ISSUE);
-    const outtx = sumWhere(e=>pm(e) && isTraceableOutgoingTransfer(e, receivedPoSet));
-    const finret = sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.FINRET);
+    const outtx = wasReceivedFromStitching ? sumWhere(e=>pm(e) && isTraceableOutgoingTransfer(e, receivedPoSet)) : 0;
+    const finret = wasReceivedFromStitching ? sumWhere(e=>pm(e) && e.type.toLowerCase()===TYPES.FINRET) : 0;
     const ti = (issFin+finret)-outtx;
     const wip = ti-tr;
     return {
@@ -2337,6 +2382,7 @@ function buildAllPoRows(){
       'Units': units.join(', '),
       'Received': recv,
       'Returned': ret,
+      'Other Washing to AM4': intx,
       'Ttl Received': tr,
       'Issued to Finishing': issFin,
       'AM4 to Other Washing': outtx,
@@ -2356,7 +2402,7 @@ document.getElementById('btn-export-po-excel').addEventListener('click', ()=>{
   }
   try{
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [ {wch:16},{wch:22},{wch:30},{wch:20},{wch:11},{wch:16},{wch:11},{wch:13},{wch:16},{wch:18},{wch:16},{wch:13},{wch:10} ];
+    ws['!cols'] = [ {wch:16},{wch:22},{wch:30},{wch:20},{wch:11},{wch:16},{wch:16},{wch:11},{wch:13},{wch:16},{wch:16},{wch:18},{wch:16},{wch:13},{wch:10} ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'PO-wise WIP');
     XLSX.writeFile(wb, 'AM4_PO_wise_WIP_' + new Date().toISOString().slice(0,10) + '.xlsx');
